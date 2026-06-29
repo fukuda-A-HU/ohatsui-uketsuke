@@ -31,13 +31,18 @@
   .filebtn:hover{background:#f0f4f8;}
   #fileInput{display:none;}
   .cropwrap{display:none;margin-top:8px;}
-  .stage{position:relative;width:100%;aspect-ratio:1/1;background:#1b2733;border-radius:12px;
+  /* ステージ＝塗り足し込みのデザイン領域（76×58mm = 印刷可能領域72×54 + 上下左右2mm） */
+  .stage{position:relative;width:100%;aspect-ratio:76/58;background:#1b2733;border-radius:12px;
     overflow:hidden;touch-action:none;cursor:grab;}
   .stage canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-  .frame{position:absolute;inset:0;pointer-events:none;
-    box-shadow:0 0 0 9999px rgba(0,0,0,.0);}
-  .frame::after{content:"";position:absolute;inset:8%;border:2px solid rgba(255,255,255,.85);
-    border-radius:6px;}
+  .frame{position:absolute;inset:0;pointer-events:none;}
+  /* 破線＝仕上がり（カット）線。外側の2mmは裁ち落とし（はみ出し） */
+  .frame::after{content:"";position:absolute;
+    top:3.45%;bottom:3.45%;left:2.63%;right:2.63%;
+    border:2px dashed rgba(255,255,255,.9);border-radius:4px;}
+  .frame::before{content:"仕上がり線";position:absolute;top:4%;left:3.4%;
+    font-size:10px;color:rgba(255,255,255,.85);background:rgba(0,0,0,.35);
+    padding:1px 5px;border-radius:4px;z-index:1;}
   .controls{display:flex;align-items:center;gap:10px;margin-top:12px;}
   .controls span{font-size:12px;color:var(--muted);white-space:nowrap;}
   input[type=range]{flex:1;accent-color:var(--accent);}
@@ -78,7 +83,7 @@
     <input type="file" id="fileInput" accept="image/*">
 
     <div class="cropwrap" id="cropwrap">
-      <p class="step" style="margin-top:16px;">STEP 2 — 正方形に調整</p>
+      <p class="step" style="margin-top:16px;">STEP 2 — カードサイズに合わせて調整</p>
       <div class="stage" id="stage">
         <canvas id="canvas"></canvas>
         <div class="frame"></div>
@@ -89,7 +94,7 @@
         <span>大</span>
         <button class="ghost" id="resetBtn" type="button">リセット</button>
       </div>
-      <p class="hint">枠内をドラッグで位置調整、スライダーで拡大縮小できます。白い枠の内側が印刷範囲です。</p>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>破線が仕上がり線（印刷範囲）</b>です。線の外側の2mm分（枠いっぱい）まで絵柄を入れてください。大事な部分は破線の内側に収めてください。</p>
     </div>
   </div>
 
@@ -125,7 +130,10 @@
    （セットアップ手順.md を参照）
    ============================================================ */
 const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbz2C8dORlwyW0AH_DORh5J-HxVA8fRulfXHJlG2BS3dkpEVDlQc56WFszw_jeCNxnIH/exec";
-const OUTPUT_SIZE  = 1000; // 出力する正方形画像の一辺(px)
+/* 出力サイズ＝印刷可能領域(72×54mm)＋上下左右2mmの塗り足し＝76×58mm を 300dpi で出力 */
+const PRINT_W_MM = 72, PRINT_H_MM = 54, BLEED_MM = 2, DPI = 300;
+const OUT_W = Math.round((PRINT_W_MM + BLEED_MM*2) / 25.4 * DPI); // 76mm → 898px
+const OUT_H = Math.round((PRINT_H_MM + BLEED_MM*2) / 25.4 * DPI); // 58mm → 685px
 
 /* ----- 以降は編集不要 ----- */
 const fileInput=document.getElementById('fileInput');
@@ -202,18 +210,15 @@ stage.addEventListener('touchend',up);
 window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
 function renderOutput(){
-  // map the visible square (with 8% inset frame) to OUTPUT_SIZE
+  // ステージ全体（＝塗り足し込み76×58mmのデザイン領域）を OUT_W×OUT_H に書き出す
   const out=document.createElement('canvas');
-  out.width=OUTPUT_SIZE; out.height=OUTPUT_SIZE;
+  out.width=OUT_W; out.height=OUT_H;
   const octx=out.getContext('2d');
-  octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUTPUT_SIZE,OUTPUT_SIZE);
-  const inset=0.08; // matches .frame::after inset
-  const fx=canvas.width*inset, fy=canvas.height*inset;
-  const fw=canvas.width*(1-inset*2), fh=canvas.height*(1-inset*2);
+  octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUT_W,OUT_H);
   const s=scaleBase*view.scale;
-  // source rect in image coords
-  const sx=(fx-view.x)/s, sy=(fy-view.y)/s, sw=fw/s, sh=fh/s;
-  octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+  const sx=(0-view.x)/s, sy=(0-view.y)/s;
+  const sw=canvas.width/s, sh=canvas.height/s;
+  octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
   return out.toDataURL('image/png');
 }
 
