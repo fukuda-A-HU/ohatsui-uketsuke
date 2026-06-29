@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>おはツイキーホルダー 画像受付フォーム</title>
+<style>
+  :root{
+    --accent:#ff6b6b; --accent2:#4aa3c7; --bg:#eef6f4; --card:#ffffff;
+    --text:#2d3748; --muted:#6b7280; --line:#e2e8f0; --ok:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 60px;}
+  header{text-align:center;margin-bottom:18px;}
+  header .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:13px;padding:4px 14px;border-radius:20px;letter-spacing:.05em;}
+  header h1{font-size:22px;margin:12px 0 4px;}
+  header p{margin:0;color:var(--muted);font-size:14px;}
+  .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;
+    box-shadow:0 4px 16px rgba(40,60,80,.06);}
+  .step{font-size:13px;font-weight:700;color:var(--accent2);margin:0 0 10px;}
+  label{display:block;font-weight:700;font-size:14px;margin:14px 0 6px;}
+  input[type=text],input[type=email],textarea{width:100%;padding:11px 12px;border:1px solid var(--line);
+    border-radius:10px;font-size:15px;font-family:inherit;background:#fafbfc;}
+  textarea{resize:vertical;min-height:70px;}
+  .filebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    padding:28px 12px;border:2px dashed var(--line);border-radius:12px;background:#fafbfc;
+    color:var(--muted);font-weight:700;cursor:pointer;text-align:center;}
+  .filebtn:hover{background:#f0f4f8;}
+  #fileInput{display:none;}
+  .cropwrap{display:none;margin-top:8px;}
+  .stage{position:relative;width:100%;aspect-ratio:1/1;background:#1b2733;border-radius:12px;
+    overflow:hidden;touch-action:none;cursor:grab;}
+  .stage canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+  .frame{position:absolute;inset:0;pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.0);}
+  .frame::after{content:"";position:absolute;inset:8%;border:2px solid rgba(255,255,255,.85);
+    border-radius:6px;}
+  .controls{display:flex;align-items:center;gap:10px;margin-top:12px;}
+  .controls span{font-size:12px;color:var(--muted);white-space:nowrap;}
+  input[type=range]{flex:1;accent-color:var(--accent);}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0 0;}
+  button.primary{width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
+    color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;}
+  button.primary:disabled{background:#cbd5e0;cursor:not-allowed;}
+  button.ghost{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;
+    padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;}
+  .req{color:var(--accent);font-size:12px;}
+  .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;
+    font-size:12.5px;color:#9a5b1e;margin-top:10px;}
+  #status{display:none;text-align:center;padding:18px;border-radius:12px;font-weight:700;margin-top:8px;}
+  #status.ok{display:block;background:#e8f7ef;color:var(--ok);}
+  #status.err{display:block;background:#fdecec;color:#c0392b;}
+  #status.load{display:block;background:#eef2ff;color:#4a5bd0;}
+  .config-warn{background:#fdecec;border:1px solid #f5b5b5;color:#c0392b;border-radius:10px;
+    padding:10px 12px;font-size:12.5px;margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">PHOTO KEY</span>
+    <h1>おはツイキーホルダー 画像受付</h1>
+    <p>キーホルダーにする画像をアップロードしてください</p>
+  </header>
+
+  <div id="configWarn" class="config-warn" style="display:none;">
+    ⚠ 送信先（Google Drive）が未設定です。管理者はファイル冒頭の <b>ENDPOINT_URL</b> を設定してください。
+  </div>
+
+  <div class="card">
+    <p class="step">STEP 1 — 画像を選ぶ</p>
+    <label class="filebtn" for="fileInput" id="fileLabel">
+      📷 画像ファイルを選択（タップ）
+    </label>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="cropwrap" id="cropwrap">
+      <p class="step" style="margin-top:16px;">STEP 2 — 正方形に調整</p>
+      <div class="stage" id="stage">
+        <canvas id="canvas"></canvas>
+        <div class="frame"></div>
+      </div>
+      <div class="controls">
+        <span>小</span>
+        <input type="range" id="zoom" min="1" max="4" step="0.01" value="1">
+        <span>大</span>
+        <button class="ghost" id="resetBtn" type="button">リセット</button>
+      </div>
+      <p class="hint">枠内をドラッグで位置調整、スライダーで拡大縮小できます。白い枠の内側が印刷範囲です。</p>
+    </div>
+  </div>
+
+  <div class="card" id="formCard" style="display:none;">
+    <p class="step">STEP 3 — ご注文情報</p>
+    <label>お名前・ハンドルネーム <span class="req">必須</span></label>
+    <input type="text" id="buyerName" placeholder="例：あくん">
+
+    <label>BOOTHの注文番号 <span class="req">必須</span></label>
+    <input type="text" id="orderId" placeholder="例：12345678">
+
+    <label>メールアドレス（任意）</label>
+    <input type="email" id="email" placeholder="連絡用（任意）">
+
+    <label>備考・ご要望（任意）</label>
+    <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
+
+    <div class="note">
+      ※ 第三者の著作権・肖像権を侵害する画像はお取り扱いできません。<br>
+      ※ 送信後、内容を確認のうえ製作いたします。
+    </div>
+
+    <button class="primary" id="submitBtn" type="button">この画像で送信する</button>
+    <div id="status"></div>
+  </div>
+
+  <p style="text-align:center;color:var(--muted);font-size:12px;">a-kun-lab / おはツイキーホルダー</p>
+</div>
+
+<script>
+/* ============================================================
+   設定：ここに Google Apps Script のウェブアプリURLを貼り付け
+   （セットアップ手順.md を参照）
+   ============================================================ */
+const ENDPOINT_URL = "";   // 例: "https://script.google.com/macros/s/AKfyc..../exec"
+const OUTPUT_SIZE  = 1000; // 出力する正方形画像の一辺(px)
+
+/* ----- 以降は編集不要 ----- */
+const fileInput=document.getElementById('fileInput');
+const cropwrap=document.getElementById('cropwrap');
+const formCard=document.getElementById('formCard');
+const stage=document.getElementById('stage');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const zoom=document.getElementById('zoom');
+const statusEl=document.getElementById('status');
+const submitBtn=document.getElementById('submitBtn');
+
+if(!ENDPOINT_URL){document.getElementById('configWarn').style.display='block';}
+
+let img=null, scaleBase=1, view={scale:1,x:0,y:0}, dragging=false, last={x:0,y:0};
+
+function fitStage(){
+  const r=stage.getBoundingClientRect();
+  canvas.width=r.width; canvas.height=r.height;
+}
+function draw(){
+  if(!img)return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const s=scaleBase*view.scale;
+  const w=img.width*s, h=img.height*s;
+  ctx.drawImage(img, view.x, view.y, w, h);
+}
+function centerImage(){
+  const s=scaleBase*view.scale;
+  view.x=(canvas.width-img.width*s)/2;
+  view.y=(canvas.height-img.height*s)/2;
+}
+fileInput.addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    img=new Image();
+    img.onload=()=>{
+      cropwrap.style.display='block';
+      formCard.style.display='block';
+      document.getElementById('fileLabel').textContent='📷 別の画像に変更';
+      fitStage();
+      // cover fit
+      scaleBase=Math.max(canvas.width/img.width, canvas.height/img.height);
+      view.scale=1; zoom.value=1;
+      centerImage(); draw();
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(f);
+});
+zoom.addEventListener('input',()=>{
+  const prev=scaleBase*view.scale;
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const ix=(cx-view.x)/prev, iy=(cy-view.y)/prev;
+  view.scale=parseFloat(zoom.value);
+  const now=scaleBase*view.scale;
+  view.x=cx-ix*now; view.y=cy-iy*now;
+  draw();
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!img)return; view.scale=1; zoom.value=1; centerImage(); draw();
+});
+// drag (mouse + touch)
+function down(x,y){dragging=true;last={x,y};stage.style.cursor='grabbing';}
+function move(x,y){if(!dragging)return;view.x+=x-last.x;view.y+=y-last.y;last={x,y};draw();}
+function up(){dragging=false;stage.style.cursor='grab';}
+stage.addEventListener('mousedown',e=>down(e.clientX,e.clientY));
+window.addEventListener('mousemove',e=>move(e.clientX,e.clientY));
+window.addEventListener('mouseup',up);
+stage.addEventListener('touchstart',e=>{const t=e.touches[0];down(t.clientX,t.clientY);},{passive:true});
+stage.addEventListener('touchmove',e=>{const t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault();},{passive:false});
+stage.addEventListener('touchend',up);
+window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
+
+function renderOutput(){
+  // map the visible square (with 8% inset frame) to OUTPUT_SIZE
+  const out=document.createElement('canvas');
+  out.width=OUTPUT_SIZE; out.height=OUTPUT_SIZE;
+  const octx=out.getContext('2d');
+  octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUTPUT_SIZE,OUTPUT_SIZE);
+  const inset=0.08; // matches .frame::after inset
+  const fx=canvas.width*inset, fy=canvas.height*inset;
+  const fw=canvas.width*(1-inset*2), fh=canvas.height*(1-inset*2);
+  const s=scaleBase*view.scale;
+  // source rect in image coords
+  const sx=(fx-view.x)/s, sy=(fy-view.y)/s, sw=fw/s, sh=fh/s;
+  octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+  return out.toDataURL('image/png');
+}
+
+submitBtn.addEventListener('click',async()=>{
+  const name=document.getElementById('buyerName').value.trim();
+  const orderId=document.getElementById('orderId').value.trim();
+  if(!img){alert('画像を選択してください');return;}
+  if(!name){alert('お名前・ハンドルネームを入力してください');return;}
+  if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
+  if(!ENDPOINT_URL){alert('送信先が未設定です。管理者にお問い合わせください。');return;}
+
+  submitBtn.disabled=true;
+  statusEl.className='load'; statusEl.textContent='送信中… しばらくお待ちください';
+
+  const payload={
+    image: renderOutput(),
+    name, orderId,
+    email: document.getElementById('email').value.trim(),
+    note: document.getElementById('note').value.trim(),
+    submittedAt: new Date().toISOString()
+  };
+  try{
+    // text/plain にして CORS プリフライトを回避
+    const res=await fetch(ENDPOINT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json().catch(()=>({status:'ok'}));
+    if(data.status==='error'){throw new Error(data.message||'送信に失敗しました');}
+    statusEl.className='ok';
+    statusEl.textContent='✓ 送信が完了しました！ご注文ありがとうございます。';
+    submitBtn.textContent='送信済み';
+  }catch(err){
+    statusEl.className='err';
+    statusEl.textContent='✗ 送信に失敗しました：'+err.message+'\n時間をおいて再度お試しください。';
+    submitBtn.disabled=false;
+  }
+});
+</script>
+</body>
+</html>
