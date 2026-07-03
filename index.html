@@ -21,6 +21,8 @@
   .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:16px;
     box-shadow:0 4px 16px rgba(40,60,80,.06);}
   .step{font-size:13px;font-weight:700;color:var(--accent2);margin:0 0 10px;}
+  .side-title{font-size:16px;font-weight:700;margin:0 0 4px;}
+  .side-title small{font-weight:400;color:var(--muted);font-size:12px;}
   label{display:block;font-weight:700;font-size:14px;margin:14px 0 6px;}
   input[type=text],input[type=email],textarea{width:100%;padding:11px 12px;border:1px solid var(--line);
     border-radius:10px;font-size:15px;font-family:inherit;background:#fafbfc;}
@@ -29,7 +31,7 @@
     padding:28px 12px;border:2px dashed var(--line);border-radius:12px;background:#fafbfc;
     color:var(--muted);font-weight:700;cursor:pointer;text-align:center;}
   .filebtn:hover{background:#f0f4f8;}
-  #fileInput{display:none;}
+  input[type=file]{display:none;}
   .cropwrap{display:none;margin-top:8px;}
   /* ステージ＝塗り足し込みのデザイン領域（76×58mm = 印刷可能領域72×54 + 上下左右2mm） */
   .stage{position:relative;width:100%;aspect-ratio:76/58;background:#1b2733;border-radius:12px;
@@ -47,6 +49,12 @@
   .controls span{font-size:12px;color:var(--muted);white-space:nowrap;}
   input[type=range]{flex:1;accent-color:var(--accent);}
   .hint{font-size:12px;color:var(--muted);margin:6px 0 0;}
+  /* 完成見本（カット後）プレビュー */
+  .preview-wrap{margin-top:16px;text-align:center;}
+  .preview-label{font-size:12px;font-weight:700;color:var(--accent2);margin:0 0 8px;}
+  .preview{width:100%;max-width:240px;aspect-ratio:72/54;background:#fff;border:1px solid var(--line);
+    border-radius:8px;box-shadow:0 3px 12px rgba(40,60,80,.14);display:inline-block;vertical-align:top;}
+  .preview-cap{font-size:11px;color:var(--muted);margin:6px 0 0;}
   button.primary{width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
     color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;}
   button.primary:disabled{background:#cbd5e0;cursor:not-allowed;}
@@ -68,33 +76,70 @@
   <header>
     <span class="badge">PHOTO KEY</span>
     <h1>おはツイキーホルダー 画像受付</h1>
-    <p>キーホルダーにする画像をアップロードしてください</p>
+    <p>キーホルダーの<b>表面・裏面</b>それぞれの画像をアップロードしてください</p>
   </header>
 
   <div id="configWarn" class="config-warn" style="display:none;">
     ⚠ 送信先（Google Drive）が未設定です。管理者はファイル冒頭の <b>ENDPOINT_URL</b> を設定してください。
   </div>
 
+  <!-- ===== 表面 ===== -->
   <div class="card">
-    <p class="step">STEP 1 — 画像を選ぶ</p>
-    <label class="filebtn" for="fileInput" id="fileLabel">
-      📷 画像ファイルを選択（タップ）
+    <p class="step">STEP 1 — 表面（おもて）の画像</p>
+    <p class="side-title">表面 <small>キーホルダーのおもて側</small></p>
+    <label class="filebtn" for="frontFileInput" id="frontFileLabel">
+      📷 表面の画像を選択（タップ）
     </label>
-    <input type="file" id="fileInput" accept="image/*">
+    <input type="file" id="frontFileInput" accept="image/*">
 
-    <div class="cropwrap" id="cropwrap">
-      <p class="step" style="margin-top:16px;">STEP 2 — カードサイズに合わせて調整</p>
-      <div class="stage" id="stage">
-        <canvas id="canvas"></canvas>
+    <div class="cropwrap" id="frontCropwrap">
+      <p class="step" style="margin-top:16px;">カードサイズに合わせて調整</p>
+      <div class="stage" id="frontStage">
+        <canvas id="frontCanvas"></canvas>
         <div class="frame"></div>
       </div>
       <div class="controls">
         <span>小</span>
-        <input type="range" id="zoom" min="1" max="4" step="0.01" value="1">
+        <input type="range" id="frontZoom" min="1" max="4" step="0.01" value="1">
         <span>大</span>
-        <button class="ghost" id="resetBtn" type="button">リセット</button>
+        <button class="ghost" id="frontReset" type="button">リセット</button>
       </div>
       <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>破線が仕上がり線（印刷範囲）</b>です。線の外側の2mm分（枠いっぱい）まで絵柄を入れてください。大事な部分は破線の内側に収めてください。</p>
+      <div class="preview-wrap">
+        <p class="preview-label">完成見本（カット後のイメージ）</p>
+        <canvas class="preview" id="frontPreview"></canvas>
+        <p class="preview-cap">仕上がり線でカットした状態です</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 裏面 ===== -->
+  <div class="card">
+    <p class="step">STEP 2 — 裏面（うら）の画像</p>
+    <p class="side-title">裏面 <small>キーホルダーのうら側</small></p>
+    <label class="filebtn" for="backFileInput" id="backFileLabel">
+      📷 裏面の画像を選択（タップ）
+    </label>
+    <input type="file" id="backFileInput" accept="image/*">
+
+    <div class="cropwrap" id="backCropwrap">
+      <p class="step" style="margin-top:16px;">カードサイズに合わせて調整</p>
+      <div class="stage" id="backStage">
+        <canvas id="backCanvas"></canvas>
+        <div class="frame"></div>
+      </div>
+      <div class="controls">
+        <span>小</span>
+        <input type="range" id="backZoom" min="1" max="4" step="0.01" value="1">
+        <span>大</span>
+        <button class="ghost" id="backReset" type="button">リセット</button>
+      </div>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>破線が仕上がり線（印刷範囲）</b>です。線の外側の2mm分（枠いっぱい）まで絵柄を入れてください。大事な部分は破線の内側に収めてください。</p>
+      <div class="preview-wrap">
+        <p class="preview-label">完成見本（カット後のイメージ）</p>
+        <canvas class="preview" id="backPreview"></canvas>
+        <p class="preview-cap">仕上がり線でカットした状態です</p>
+      </div>
     </div>
   </div>
 
@@ -113,6 +158,7 @@
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
 
     <div class="note">
+      ※ <b>表面・裏面の2枚とも</b>設定してから送信してください。<br>
       ※ 第三者の著作権・肖像権を侵害する画像はお取り扱いできません。<br>
       ※ 送信後、内容を確認のうえ製作いたします。
     </div>
@@ -127,105 +173,140 @@
 <script>
 /* ============================================================
    設定：ここに Google Apps Script のウェブアプリURLを貼り付け
-   （セットアップ手順.md を参照）
+   （gas/コード.gs を参照）
    ============================================================ */
-const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbz2C8dORlwyW0AH_DORh5J-HxVA8fRulfXHJlG2BS3dkpEVDlQc56WFszw_jeCNxnIH/exec";
+const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyWEE9jC8R_nFbDjuZrv161V1aFJXpViX1D0KRNUAU35tvyp5wZ-AJ5vOU2OeJm1tpk/exec";
 /* 出力サイズ＝印刷可能領域(72×54mm)＋上下左右2mmの塗り足し＝76×58mm を 300dpi で出力 */
 const PRINT_W_MM = 72, PRINT_H_MM = 54, BLEED_MM = 2, DPI = 300;
 const OUT_W = Math.round((PRINT_W_MM + BLEED_MM*2) / 25.4 * DPI); // 76mm → 898px
 const OUT_H = Math.round((PRINT_H_MM + BLEED_MM*2) / 25.4 * DPI); // 58mm → 685px
+/* ステージ（塗り足し込み）に対する仕上がり領域（カット後）の割合 */
+const CUT_FX = PRINT_W_MM / (PRINT_W_MM + BLEED_MM*2);            // 72/76
+const CUT_FY = PRINT_H_MM / (PRINT_H_MM + BLEED_MM*2);            // 54/58
+const BLEED_FX = BLEED_MM / (PRINT_W_MM + BLEED_MM*2);            // 2/76
+const BLEED_FY = BLEED_MM / (PRINT_H_MM + BLEED_MM*2);            // 2/58
 
 /* ----- 以降は編集不要 ----- */
-const fileInput=document.getElementById('fileInput');
-const cropwrap=document.getElementById('cropwrap');
 const formCard=document.getElementById('formCard');
-const stage=document.getElementById('stage');
-const canvas=document.getElementById('canvas');
-const ctx=canvas.getContext('2d');
-const zoom=document.getElementById('zoom');
 const statusEl=document.getElementById('status');
 const submitBtn=document.getElementById('submitBtn');
 
 if(!ENDPOINT_URL){document.getElementById('configWarn').style.display='block';}
 
-let img=null, scaleBase=1, view={scale:1,x:0,y:0}, dragging=false, last={x:0,y:0};
+/* 1枚分（表 or 裏）のクロップエディタ。prefix = 'front' | 'back' */
+function createEditor(prefix){
+  const fileInput=document.getElementById(prefix+'FileInput');
+  const fileLabel=document.getElementById(prefix+'FileLabel');
+  const cropwrap =document.getElementById(prefix+'Cropwrap');
+  const stage    =document.getElementById(prefix+'Stage');
+  const canvas   =document.getElementById(prefix+'Canvas');
+  const ctx      =canvas.getContext('2d');
+  const zoom     =document.getElementById(prefix+'Zoom');
+  const resetBtn =document.getElementById(prefix+'Reset');
+  const preview  =document.getElementById(prefix+'Preview');
+  const pctx     =preview.getContext('2d');
 
-function fitStage(){
-  const r=stage.getBoundingClientRect();
-  canvas.width=r.width; canvas.height=r.height;
-}
-function draw(){
-  if(!img)return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const s=scaleBase*view.scale;
-  const w=img.width*s, h=img.height*s;
-  ctx.drawImage(img, view.x, view.y, w, h);
-}
-function centerImage(){
-  const s=scaleBase*view.scale;
-  view.x=(canvas.width-img.width*s)/2;
-  view.y=(canvas.height-img.height*s)/2;
-}
-fileInput.addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    img=new Image();
-    img.onload=()=>{
-      cropwrap.style.display='block';
-      formCard.style.display='block';
-      document.getElementById('fileLabel').textContent='📷 別の画像に変更';
-      fitStage();
-      // cover fit
-      scaleBase=Math.max(canvas.width/img.width, canvas.height/img.height);
-      view.scale=1; zoom.value=1;
-      centerImage(); draw();
+  let img=null, scaleBase=1, view={scale:1,x:0,y:0}, dragging=false, last={x:0,y:0};
+
+  function fitStage(){
+    const r=stage.getBoundingClientRect();
+    canvas.width=r.width; canvas.height=r.height;
+    const pr=preview.getBoundingClientRect();
+    preview.width=Math.max(1,Math.round(pr.width));
+    preview.height=Math.max(1,Math.round(pr.height));
+  }
+  function drawPreview(){
+    pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,preview.width,preview.height);
+    if(!img)return;
+    const s=scaleBase*view.scale;
+    // 仕上がり（カット）領域をステージ座標で算出
+    const cutL=canvas.width*BLEED_FX, cutT=canvas.height*BLEED_FY;
+    const cutW=canvas.width*CUT_FX,  cutH=canvas.height*CUT_FY;
+    // 現在のビュー変換で元画像座標へ逆算
+    const sx=(cutL-view.x)/s, sy=(cutT-view.y)/s;
+    const sw=cutW/s, sh=cutH/s;
+    pctx.drawImage(img, sx, sy, sw, sh, 0, 0, preview.width, preview.height);
+  }
+  function draw(){
+    if(!img)return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const s=scaleBase*view.scale;
+    ctx.drawImage(img, view.x, view.y, img.width*s, img.height*s);
+    drawPreview();
+  }
+  function centerImage(){
+    const s=scaleBase*view.scale;
+    view.x=(canvas.width-img.width*s)/2;
+    view.y=(canvas.height-img.height*s)/2;
+  }
+  fileInput.addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      img=new Image();
+      img.onload=()=>{
+        cropwrap.style.display='block';
+        formCard.style.display='block';
+        fileLabel.textContent='📷 別の画像に変更';
+        fitStage();
+        // cover fit
+        scaleBase=Math.max(canvas.width/img.width, canvas.height/img.height);
+        view.scale=1; zoom.value=1;
+        centerImage(); draw();
+      };
+      img.src=ev.target.result;
     };
-    img.src=ev.target.result;
-  };
-  reader.readAsDataURL(f);
-});
-zoom.addEventListener('input',()=>{
-  const prev=scaleBase*view.scale;
-  const cx=canvas.width/2, cy=canvas.height/2;
-  const ix=(cx-view.x)/prev, iy=(cy-view.y)/prev;
-  view.scale=parseFloat(zoom.value);
-  const now=scaleBase*view.scale;
-  view.x=cx-ix*now; view.y=cy-iy*now;
-  draw();
-});
-document.getElementById('resetBtn').addEventListener('click',()=>{
-  if(!img)return; view.scale=1; zoom.value=1; centerImage(); draw();
-});
-// drag (mouse + touch)
-function down(x,y){dragging=true;last={x,y};stage.style.cursor='grabbing';}
-function move(x,y){if(!dragging)return;view.x+=x-last.x;view.y+=y-last.y;last={x,y};draw();}
-function up(){dragging=false;stage.style.cursor='grab';}
-stage.addEventListener('mousedown',e=>down(e.clientX,e.clientY));
-window.addEventListener('mousemove',e=>move(e.clientX,e.clientY));
-window.addEventListener('mouseup',up);
-stage.addEventListener('touchstart',e=>{const t=e.touches[0];down(t.clientX,t.clientY);},{passive:true});
-stage.addEventListener('touchmove',e=>{const t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault();},{passive:false});
-stage.addEventListener('touchend',up);
-window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
+    reader.readAsDataURL(f);
+  });
+  zoom.addEventListener('input',()=>{
+    if(!img)return;
+    const prev=scaleBase*view.scale;
+    const cx=canvas.width/2, cy=canvas.height/2;
+    const ix=(cx-view.x)/prev, iy=(cy-view.y)/prev;
+    view.scale=parseFloat(zoom.value);
+    const now=scaleBase*view.scale;
+    view.x=cx-ix*now; view.y=cy-iy*now;
+    draw();
+  });
+  resetBtn.addEventListener('click',()=>{
+    if(!img)return; view.scale=1; zoom.value=1; centerImage(); draw();
+  });
+  // drag (mouse + touch)
+  function down(x,y){if(!img)return;dragging=true;last={x,y};stage.style.cursor='grabbing';}
+  function move(x,y){if(!dragging)return;view.x+=x-last.x;view.y+=y-last.y;last={x,y};draw();}
+  function up(){dragging=false;stage.style.cursor='grab';}
+  stage.addEventListener('mousedown',e=>down(e.clientX,e.clientY));
+  window.addEventListener('mousemove',e=>move(e.clientX,e.clientY));
+  window.addEventListener('mouseup',up);
+  stage.addEventListener('touchstart',e=>{const t=e.touches[0];down(t.clientX,t.clientY);},{passive:true});
+  stage.addEventListener('touchmove',e=>{const t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault();},{passive:false});
+  stage.addEventListener('touchend',up);
+  window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
-function renderOutput(){
-  // ステージ全体（＝塗り足し込み76×58mmのデザイン領域）を OUT_W×OUT_H に書き出す
-  const out=document.createElement('canvas');
-  out.width=OUT_W; out.height=OUT_H;
-  const octx=out.getContext('2d');
-  octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUT_W,OUT_H);
-  const s=scaleBase*view.scale;
-  const sx=(0-view.x)/s, sy=(0-view.y)/s;
-  const sw=canvas.width/s, sh=canvas.height/s;
-  octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
-  return out.toDataURL('image/png');
+  function renderOutput(){
+    // ステージ全体（＝塗り足し込み76×58mmのデザイン領域）を OUT_W×OUT_H に書き出す
+    const out=document.createElement('canvas');
+    out.width=OUT_W; out.height=OUT_H;
+    const octx=out.getContext('2d');
+    octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUT_W,OUT_H);
+    const s=scaleBase*view.scale;
+    const sx=(0-view.x)/s, sy=(0-view.y)/s;
+    const sw=canvas.width/s, sh=canvas.height/s;
+    octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+    return out.toDataURL('image/png');
+  }
+
+  return { hasImage:()=>!!img, renderOutput };
 }
+
+const front=createEditor('front');
+const back =createEditor('back');
 
 submitBtn.addEventListener('click',async()=>{
   const name=document.getElementById('buyerName').value.trim();
   const orderId=document.getElementById('orderId').value.trim();
-  if(!img){alert('画像を選択してください');return;}
+  if(!front.hasImage()){alert('表面の画像を選択してください');return;}
+  if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
   if(!name){alert('お名前・ハンドルネームを入力してください');return;}
   if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
   if(!ENDPOINT_URL){alert('送信先が未設定です。管理者にお問い合わせください。');return;}
@@ -234,7 +315,8 @@ submitBtn.addEventListener('click',async()=>{
   statusEl.className='load'; statusEl.textContent='送信中… しばらくお待ちください';
 
   const payload={
-    image: renderOutput(),
+    imageFront: front.renderOutput(),
+    imageBack: back.renderOutput(),
     name, orderId,
     email: document.getElementById('email').value.trim(),
     note: document.getElementById('note').value.trim(),
