@@ -33,23 +33,15 @@
   .filebtn:hover{background:#f0f4f8;}
   input[type=file]{display:none;}
   .cropwrap{display:none;margin-top:8px;}
-  /* ステージ＝塗り足し込みのデザイン領域（76×58mm = 印刷可能領域72×54 + 上下左右2mm） */
-  .stage{position:relative;width:100%;aspect-ratio:76/58;background:#1b2733;border-radius:12px;
+  /* ステージ＝仕上がり(キーホルダー挿入)サイズ 72×54mm。ここに写った画像がそのまま印刷され、SELPHYのフチあり印刷で周囲に白フチが付く */
+  .stage{position:relative;width:100%;aspect-ratio:72/54;background:#1b2733;border-radius:12px;
     overflow:hidden;touch-action:none;cursor:grab;}
   .stage canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-  .frame{position:absolute;inset:0;pointer-events:none;}
-  /* 破線＝仕上がり（カット）線。外側の2mmは裁ち落とし（はみ出し） */
-  .frame::after{content:"";position:absolute;
-    top:3.45%;bottom:3.45%;left:2.63%;right:2.63%;
-    border:2px dashed rgba(255,255,255,.9);border-radius:4px;}
-  .frame::before{content:"仕上がり線";position:absolute;top:4%;left:3.4%;
-    font-size:10px;color:rgba(255,255,255,.85);background:rgba(0,0,0,.35);
-    padding:1px 5px;border-radius:4px;z-index:1;}
   .controls{display:flex;align-items:center;gap:10px;margin-top:12px;}
   .controls span{font-size:12px;color:var(--muted);white-space:nowrap;}
   input[type=range]{flex:1;accent-color:var(--accent);}
   .hint{font-size:12px;color:var(--muted);margin:6px 0 0;}
-  /* 完成見本（カット後）プレビュー */
+  /* 完成見本（フチあり印刷の仕上がり）プレビュー */
   .preview-wrap{margin-top:16px;text-align:center;}
   .preview-label{font-size:12px;font-weight:700;color:var(--accent2);margin:0 0 8px;}
   .preview{width:100%;max-width:240px;aspect-ratio:72/54;background:#fff;border:1px solid var(--line);
@@ -96,7 +88,6 @@
       <p class="step" style="margin-top:16px;">カードサイズに合わせて調整</p>
       <div class="stage" id="frontStage">
         <canvas id="frontCanvas"></canvas>
-        <div class="frame"></div>
       </div>
       <div class="controls">
         <span>小</span>
@@ -104,11 +95,11 @@
         <span>大</span>
         <button class="ghost" id="frontReset" type="button">リセット</button>
       </div>
-      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>破線が仕上がり線（印刷範囲）</b>です。線の外側の2mm分（枠いっぱい）まで絵柄を入れてください。大事な部分は破線の内側に収めてください。</p>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>SELPHYの「フチあり」印刷で周囲に白フチが付くので、下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。</p>
       <div class="preview-wrap">
-        <p class="preview-label">完成見本（カット後のイメージ）</p>
+        <p class="preview-label">完成見本（フチあり印刷の仕上がり）</p>
         <canvas class="preview" id="frontPreview"></canvas>
-        <p class="preview-cap">仕上がり線でカットした状態です</p>
+        <p class="preview-cap">SELPHYのフチあり印刷で白フチが付いた状態です（白フチは目安）</p>
       </div>
     </div>
   </div>
@@ -126,7 +117,6 @@
       <p class="step" style="margin-top:16px;">カードサイズに合わせて調整</p>
       <div class="stage" id="backStage">
         <canvas id="backCanvas"></canvas>
-        <div class="frame"></div>
       </div>
       <div class="controls">
         <span>小</span>
@@ -134,11 +124,11 @@
         <span>大</span>
         <button class="ghost" id="backReset" type="button">リセット</button>
       </div>
-      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>破線が仕上がり線（印刷範囲）</b>です。線の外側の2mm分（枠いっぱい）まで絵柄を入れてください。大事な部分は破線の内側に収めてください。</p>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>SELPHYの「フチあり」印刷で周囲に白フチが付くので、下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。</p>
       <div class="preview-wrap">
-        <p class="preview-label">完成見本（カット後のイメージ）</p>
+        <p class="preview-label">完成見本（フチあり印刷の仕上がり）</p>
         <canvas class="preview" id="backPreview"></canvas>
-        <p class="preview-cap">仕上がり線でカットした状態です</p>
+        <p class="preview-cap">SELPHYのフチあり印刷で白フチが付いた状態です（白フチは目安）</p>
       </div>
     </div>
   </div>
@@ -176,15 +166,13 @@
    （gas/コード.gs を参照）
    ============================================================ */
 const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyWEE9jC8R_nFbDjuZrv161V1aFJXpViX1D0KRNUAU35tvyp5wZ-AJ5vOU2OeJm1tpk/exec";
-/* 出力サイズ＝印刷可能領域(72×54mm)＋上下左右2mmの塗り足し＝76×58mm を 300dpi で出力 */
-const PRINT_W_MM = 72, PRINT_H_MM = 54, BLEED_MM = 2, DPI = 300;
-const OUT_W = Math.round((PRINT_W_MM + BLEED_MM*2) / 25.4 * DPI); // 76mm → 898px
-const OUT_H = Math.round((PRINT_H_MM + BLEED_MM*2) / 25.4 * DPI); // 58mm → 685px
-/* ステージ（塗り足し込み）に対する仕上がり領域（カット後）の割合 */
-const CUT_FX = PRINT_W_MM / (PRINT_W_MM + BLEED_MM*2);            // 72/76
-const CUT_FY = PRINT_H_MM / (PRINT_H_MM + BLEED_MM*2);            // 54/58
-const BLEED_FX = BLEED_MM / (PRINT_W_MM + BLEED_MM*2);            // 2/76
-const BLEED_FY = BLEED_MM / (PRINT_H_MM + BLEED_MM*2);            // 2/58
+/* 出力サイズ＝仕上がり(キーホルダー挿入)サイズ 72×54mm を 300dpi で出力。
+   SELPHYの「フチあり」印刷で白フチはプリンター側が付けるため、白フチは焼き込まない。 */
+const PRINT_W_MM = 72, PRINT_H_MM = 54, DPI = 300;
+const OUT_W = Math.round(PRINT_W_MM / 25.4 * DPI); // 72mm → 850px
+const OUT_H = Math.round(PRINT_H_MM / 25.4 * DPI); // 54mm → 638px
+/* 完成見本で表現する白フチの幅（各辺、プレビュー寸法に対する割合）。SELPHYフチあり印刷の見え方の目安 */
+const FRINGE = 0.05;
 
 /* ----- 以降は編集不要 ----- */
 const formCard=document.getElementById('formCard');
@@ -219,13 +207,16 @@ function createEditor(prefix){
     pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,preview.width,preview.height);
     if(!img)return;
     const s=scaleBase*view.scale;
-    // 仕上がり（カット）領域をステージ座標で算出
-    const cutL=canvas.width*BLEED_FX, cutT=canvas.height*BLEED_FY;
-    const cutW=canvas.width*CUT_FX,  cutH=canvas.height*CUT_FY;
-    // 現在のビュー変換で元画像座標へ逆算
-    const sx=(cutL-view.x)/s, sy=(cutT-view.y)/s;
-    const sw=cutW/s, sh=cutH/s;
-    pctx.drawImage(img, sx, sy, sw, sh, 0, 0, preview.width, preview.height);
+    // 白フチの内側（写真が入る領域）＝フチあり印刷で画像が収まる範囲
+    const mx=Math.round(preview.width*FRINGE), my=Math.round(preview.height*FRINGE);
+    const dw=preview.width-mx*2, dh=preview.height-my*2;
+    // ステージ全体(=仕上がり72×54mm)を元画像座標へ逆算して白フチの内側へ描画
+    const sx=(0-view.x)/s, sy=(0-view.y)/s;
+    const sw=canvas.width/s, sh=canvas.height/s;
+    pctx.drawImage(img, sx, sy, sw, sh, mx, my, dw, dh);
+    // 写真と白フチの境目をうっすら見せる
+    pctx.strokeStyle='rgba(0,0,0,.08)'; pctx.lineWidth=1;
+    pctx.strokeRect(mx+0.5, my+0.5, dw-1, dh-1);
   }
   function draw(){
     if(!img)return;
@@ -284,7 +275,7 @@ function createEditor(prefix){
   window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
   function renderOutput(){
-    // ステージ全体（＝塗り足し込み76×58mmのデザイン領域）を OUT_W×OUT_H に書き出す
+    // ステージ全体（＝仕上がり72×54mm）を OUT_W×OUT_H に書き出す（白フチはSELPHYのフチあり印刷で付与）
     const out=document.createElement('canvas');
     out.width=OUT_W; out.height=OUT_H;
     const octx=out.getContext('2d');
