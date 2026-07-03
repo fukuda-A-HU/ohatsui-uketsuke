@@ -1,0 +1,46 @@
+name: Deploy to GitHub Pages
+
+# main への push（＝PRマージ）で静的サイトを自動公開する
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行は最新の1本だけにする（古いデプロイはキャンセル）
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 公開に必要な静的ファイルだけを site/ にまとめる
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp index.html site/
+          cp README.md site/ 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
