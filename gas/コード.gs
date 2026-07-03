@@ -32,6 +32,8 @@ function doPost(e) {
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 50);
     const base  = (safe(data.orderId) || 'noorder') + '_' + (safe(data.name) || 'noname');
     const stamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
+    // 印刷モード（フチあり/ふちなし）。出品者がSELPHYでの印刷方法を判断するために記録
+    const mode  = (data.borderMode === 'フチあり' || data.borderMode === 'ふちなし') ? data.borderMode : '未指定';
 
     // 表面・裏面の2枚を保存
     const savedUrls = {};
@@ -47,7 +49,7 @@ function doPost(e) {
       const blob = Utilities.newBlob(
         Utilities.base64Decode(m[2]),
         m[1],
-        base + '_' + label + '_' + stamp + '.png'
+        base + '_' + label + '_' + mode + '_' + stamp + '.png'
       );
       const file = folder.createFile(blob);
       savedUrls[key] = file.getUrl();
@@ -68,7 +70,8 @@ function doPost(e) {
         data.email || '',
         data.note || '',
         savedUrls.Front,
-        savedUrls.Back
+        savedUrls.Back,
+        mode
       ]);
     } catch (logErr) {
       Logger.log('スプレッドシート記録に失敗しました: ' + logErr);
@@ -96,20 +99,29 @@ function getUploadFolder_() {
  * 3. どちらも無ければ新規作成し、ヘッダ行を書き込んで ID を保存する
  */
 function getLogSheet_() {
+  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定'];
+  let sheet;
+
   if (SHEET_ID) {
-    return SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+    sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+  } else {
+    const props = PropertiesService.getScriptProperties();
+    const savedId = props.getProperty('LOG_SHEET_ID');
+    if (savedId) {
+      sheet = SpreadsheetApp.openById(savedId).getSheets()[0];
+    } else {
+      const ss = SpreadsheetApp.create('おはツイキーホルダー受付ログ');
+      sheet = ss.getSheets()[0];
+      sheet.appendRow(HEADER);
+      props.setProperty('LOG_SHEET_ID', ss.getId());
+      return sheet;
+    }
   }
 
-  const props = PropertiesService.getScriptProperties();
-  const savedId = props.getProperty('LOG_SHEET_ID');
-  if (savedId) {
-    return SpreadsheetApp.openById(savedId).getSheets()[0];
+  // 既存シートの見出しに『フチ設定』列が無ければ補う（旧バージョンからの引き継ぎ用）
+  if (sheet.getLastRow() >= 1 && sheet.getRange(1, HEADER.length).getValue() === '') {
+    sheet.getRange(1, HEADER.length).setValue('フチ設定');
   }
-
-  const ss = SpreadsheetApp.create('おはツイキーホルダー受付ログ');
-  const sheet = ss.getSheets()[0];
-  sheet.appendRow(['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL']);
-  props.setProperty('LOG_SHEET_ID', ss.getId());
   return sheet;
 }
 
