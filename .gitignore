@@ -1,0 +1,9 @@
+# clasp / Google の認証情報（絶対にコミットしない）
+.clasprc.json
+~/.clasprc.json
+
+# clasp のプロジェクト紐付け（個人アカウント/スクリプト固有。再生成は clasp create）
+.clasp.json
+
+# Node
+node_modules/
