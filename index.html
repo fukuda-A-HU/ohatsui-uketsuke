@@ -66,6 +66,15 @@
   #status.load{display:block;background:#eef2ff;color:#4a5bd0;}
   .config-warn{background:#fdecec;border:1px solid #f5b5b5;color:#c0392b;border-radius:10px;
     padding:10px 12px;font-size:12.5px;margin-bottom:14px;}
+  /* 画像使用の注意事項リンク（規約未確認は送信不可）。完成見本の下に置く */
+  .terms-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    padding:13px 12px;margin-top:12px;border:2px solid var(--accent2);border-radius:12px;
+    background:#f0f8fb;color:var(--accent2);font-weight:700;font-size:13.5px;text-decoration:none;
+    cursor:pointer;text-align:center;}
+  .terms-link:hover{background:#e4f1f7;}
+  .terms-link.done{border-color:var(--ok);background:#eef9f2;color:var(--ok);}
+  .terms-status{font-size:12px;color:var(--muted);margin:10px 0 0;text-align:center;}
+  .terms-status.done{color:var(--ok);font-weight:700;}
 </style>
 </head>
 <body>
@@ -118,6 +127,7 @@
         <canvas class="preview" id="frontPreview"></canvas>
         <p class="preview-cap" id="frontPreviewCap"></p>
       </div>
+      <a href="terms.html" target="_blank" rel="noopener" class="terms-link">📄 画像使用に関する注意事項を確認する</a>
     </div>
   </div>
 
@@ -147,6 +157,7 @@
         <canvas class="preview" id="backPreview"></canvas>
         <p class="preview-cap" id="backPreviewCap"></p>
       </div>
+      <a href="terms.html" target="_blank" rel="noopener" class="terms-link">📄 画像使用に関する注意事項を確認する</a>
     </div>
   </div>
 
@@ -170,7 +181,8 @@
       ※ 送信後、内容を確認のうえ製作いたします。
     </div>
 
-    <button class="primary" id="submitBtn" type="button">この画像で送信する</button>
+    <p class="terms-status" id="termsStatus">※ 各画像の<b>完成見本の下にある「注意事項」</b>を確認するとご注文いただけます</p>
+    <button class="primary" id="submitBtn" type="button" disabled>この画像で送信する</button>
     <div id="status"></div>
   </div>
 
@@ -199,6 +211,18 @@ let borderMode = 'フチあり';
 const formCard=document.getElementById('formCard');
 const statusEl=document.getElementById('status');
 const submitBtn=document.getElementById('submitBtn');
+const termsStatus=document.getElementById('termsStatus');
+let termsOpened=false;
+function markTermsDone(){
+  termsOpened=true;
+  document.querySelectorAll('.terms-link').forEach(el=>{
+    el.classList.add('done');
+    el.textContent='✓ 注意事項を確認しました';
+  });
+  if(termsStatus){termsStatus.textContent='✓ 注意事項を確認しました。ご注文いただけます。';termsStatus.classList.add('done');}
+  submitBtn.disabled=false;
+}
+document.querySelectorAll('.terms-link').forEach(el=>el.addEventListener('click',markTermsDone));
 
 if(!ENDPOINT_URL){document.getElementById('configWarn').style.display='block';}
 
@@ -342,6 +366,7 @@ document.querySelectorAll('input[name="borderMode"]').forEach(r=>{
 updateModeLabels();
 
 submitBtn.addEventListener('click',async()=>{
+  if(!termsOpened){alert('先に「画像使用に関する注意事項」をご確認ください');return;}
   const name=document.getElementById('buyerName').value.trim();
   const orderId=document.getElementById('orderId').value.trim();
   if(!front.hasImage()){alert('表面の画像を選択してください');return;}
