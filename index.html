@@ -49,7 +49,7 @@
   /* 完成見本（印刷モード反映）プレビュー */
   .preview-wrap{margin-top:16px;text-align:center;}
   .preview-label{font-size:12px;font-weight:700;color:var(--accent2);margin:0 0 8px;}
-  .preview{width:100%;max-width:200px;aspect-ratio:54/72;background:#fff;border:1px solid var(--line);
+  .preview{width:100%;max-width:200px;aspect-ratio:54/85;background:#fff;border:1px solid var(--line);
     border-radius:8px;box-shadow:0 3px 12px rgba(40,60,80,.14);display:inline-block;vertical-align:top;}
   .preview-cap{font-size:11px;color:var(--muted);margin:6px 0 0;}
   button.primary{width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
@@ -188,8 +188,10 @@ const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyWEE9jC8R_nFbDjuZ
 const PRINT_W_MM = 54, PRINT_H_MM = 72, DPI = 300;
 const OUT_W = Math.round(PRINT_W_MM / 25.4 * DPI); // 54mm → 638px
 const OUT_H = Math.round(PRINT_H_MM / 25.4 * DPI); // 72mm → 850px
-/* フチあり印刷の白フチ幅(実測ベース, mm)。完成見本で各辺にこの幅の白フチを表示 */
+/* フチあり印刷の白フチ幅(実測ベース, mm)。フチあり時に左右上へ均一に付く */
 const FUCHI_MM = 3.7;
+/* SELPHYカードサイズ用紙の実測比（プレビュー枠 512×805px ≒ 54×85mm 縦）。完成見本は用紙レイアウトを再現 */
+const PAPER_W_MM = 54, PAPER_H_MM = 85;
 /* 印刷モード（ユーザー選択）: 'フチあり' | 'ふちなし'。既定はフチあり */
 let borderMode = 'フチあり';
 
@@ -223,24 +225,27 @@ function createEditor(prefix){
     preview.height=Math.max(1,Math.round(pr.height));
   }
   function drawPreview(){
+    // プレビュー枠＝SELPHYカードサイズ用紙(54×85mm 縦)のレイアウトを再現
     const W=preview.width, H=preview.height;
-    pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,W,H);
+    pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,W,H);   // 用紙(白)
     if(!img)return;
     const s=scaleBase*view.scale;
-    // ステージ全体(=仕上がり54×72mm)を元画像座標へ逆算
+    // クロップ(=仕上がり54×72mm)全体を元画像座標へ逆算
     const sx=(0-view.x)/s, sy=(0-view.y)/s;
     const sw=canvas.width/s, sh=canvas.height/s;
+    // 用紙上での写真配置：上寄せ。フチあり=左右上に均一フチ／ふちなし=幅いっぱい。
+    // 高さは 54:72 の比を保持するため、用紙の下側に余白が残る（＝実機の見た目）。
+    let mx=0, my=0;
     if(borderMode==='フチあり'){
-      // 実測ベースの白フチ(各辺 FUCHI_MM)。54×72基準なので px では上下左右ほぼ均一
-      const mx=Math.round(W*FUCHI_MM/PRINT_W_MM), my=Math.round(H*FUCHI_MM/PRINT_H_MM);
-      const dw=W-mx*2, dh=H-my*2;
-      pctx.drawImage(img, sx, sy, sw, sh, mx, my, dw, dh);
-      pctx.strokeStyle='rgba(0,0,0,.08)'; pctx.lineWidth=1;
-      pctx.strokeRect(mx+0.5, my+0.5, dw-1, dh-1);
-    } else {
-      // ふちなし：用紙の端まで画像
-      pctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+      mx=Math.round(W*FUCHI_MM/PAPER_W_MM);
+      my=Math.round(H*FUCHI_MM/PAPER_H_MM);
     }
+    const dw=W-mx*2;
+    const dh=Math.round(dw*PRINT_H_MM/PRINT_W_MM);   // 54:72 を維持
+    pctx.drawImage(img, sx, sy, sw, sh, mx, my, dw, dh);
+    // 写真の輪郭をうっすら（用紙の白との境目）
+    pctx.strokeStyle='rgba(0,0,0,.10)'; pctx.lineWidth=1;
+    pctx.strokeRect(mx+0.5, my+0.5, dw-1, dh-1);
   }
   function draw(){
     if(!img)return;
@@ -320,8 +325,8 @@ const back =createEditor('back');
 /* 印刷モード（フチあり/ふちなし）の切替。完成見本のラベルと描画に反映 */
 function updateModeLabels(){
   const cap = borderMode==='フチあり'
-    ? '白フチを付けて印刷した状態です（白フチは目安）'
-    : '画像を端まで印刷した状態です';
+    ? '印刷される用紙の見た目です（フチあり：均一フチ＋下に余白／上部がキーホルダーになります）'
+    : '印刷される用紙の見た目です（ふちなし：下に余白／上部がキーホルダーになります）';
   ['front','back'].forEach(p=>{
     document.getElementById(p+'PreviewLabel').textContent='完成見本（'+borderMode+'）';
     document.getElementById(p+'PreviewCap').textContent=cap;
