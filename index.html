@@ -157,11 +157,10 @@
         <canvas class="preview" id="backPreview"></canvas>
         <p class="preview-cap" id="backPreviewCap"></p>
       </div>
-      <a href="terms.html" target="_blank" rel="noopener" class="terms-link">📄 画像使用に関する注意事項を確認する</a>
     </div>
   </div>
 
-  <div class="card" id="formCard" style="display:none;">
+  <div class="card" id="formCard">
     <p class="step">STEP 3 — ご注文情報</p>
     <label>お名前・ハンドルネーム <span class="req">必須</span></label>
     <input type="text" id="buyerName" placeholder="例：あくん">
@@ -181,7 +180,8 @@
       ※ 送信後、内容を確認のうえ製作いたします。
     </div>
 
-    <p class="terms-status" id="termsStatus">※ 各画像の<b>完成見本の下にある「注意事項」</b>を確認するとご注文いただけます</p>
+    <a href="terms.html" target="_blank" rel="noopener" id="termsLink" class="terms-link">📄 画像使用に関する注意事項を確認する</a>
+    <p class="terms-status" id="termsStatus">※ 上のボタンから注意事項を確認するとご注文いただけます</p>
     <button class="primary" id="submitBtn" type="button" disabled>この画像で送信する</button>
     <div id="status"></div>
   </div>
