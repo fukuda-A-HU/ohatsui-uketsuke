@@ -96,15 +96,15 @@
     <div class="modes">
       <label><input type="radio" name="borderMode" value="フチあり" checked>
         <span>フチあり<small>写真のまわりに白いフチを付けて印刷</small></span></label>
-      <label><input type="radio" name="borderMode" value="ふちなし">
-        <span>ふちなし<small>写真を用紙の端まで印刷（フチなし）</small></span></label>
+      <label><input type="radio" name="borderMode" value="フチなし">
+        <span>フチなし<small>写真を用紙の端まで印刷</small></span></label>
     </div>
   </div>
 
   <!-- ===== 表面 ===== -->
   <div class="card">
     <p class="step">STEP 1 — 表面（おもて）の画像</p>
-    <p class="side-title">表面 <small>キーホルダーのおもて側</small></p>
+    <p class="side-title">表面</p>
     <label class="filebtn" for="frontFileInput" id="frontFileLabel">
       📷 表面の画像を選択（タップ）
     </label>
@@ -133,7 +133,7 @@
   <!-- ===== 裏面 ===== -->
   <div class="card">
     <p class="step">STEP 2 — 裏面（うら）の画像</p>
-    <p class="side-title">裏面 <small>キーホルダーのうら側</small></p>
+    <p class="side-title">裏面</p>
     <label class="filebtn" for="backFileInput" id="backFileLabel">
       📷 裏面の画像を選択（タップ）
     </label>
@@ -375,7 +375,7 @@ const back =createEditor('back');
 function updateModeLabels(){
   const cap = borderMode==='フチあり'
     ? '印刷される用紙の見た目です（フチあり：均一フチ＋下に余白／上部がキーホルダーになります）'
-    : '印刷される用紙の見た目です（ふちなし：下に余白／上部がキーホルダーになります）';
+    : '印刷される用紙の見た目です（フチなし：下に余白／上部がキーホルダーになります）';
   ['front','back'].forEach(p=>{
     document.getElementById(p+'PreviewLabel').textContent='完成見本（'+borderMode+'）';
     document.getElementById(p+'PreviewCap').textContent=cap;
