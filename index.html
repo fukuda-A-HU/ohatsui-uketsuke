@@ -168,8 +168,8 @@
     <label>BOOTHの注文番号 <span class="req">必須</span></label>
     <input type="text" id="orderId" placeholder="例：12345678">
 
-    <label>メールアドレス（任意）</label>
-    <input type="email" id="email" placeholder="連絡用（任意）">
+    <label>メールアドレス <span class="req">必須</span></label>
+    <input type="email" id="email" placeholder="例：you@example.com">
 
     <label>備考・ご要望（任意）</label>
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
@@ -396,10 +396,13 @@ submitBtn.addEventListener('click',async()=>{
   if(!agreeTerms.checked){alert('「画像使用に関する注意事項」に同意してください');return;}
   const name=document.getElementById('buyerName').value.trim();
   const orderId=document.getElementById('orderId').value.trim();
+  const email=document.getElementById('email').value.trim();
   if(!front.hasImage()){alert('表面の画像を選択してください');return;}
   if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
   if(!name){alert('お名前・ハンドルネームを入力してください');return;}
   if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
+  if(!email){alert('メールアドレスを入力してください');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('メールアドレスの形式が正しくありません');return;}
   if(!ENDPOINT_URL){alert('送信先が未設定です。管理者にお問い合わせください。');return;}
 
   submitBtn.disabled=true;
@@ -409,8 +412,7 @@ submitBtn.addEventListener('click',async()=>{
     imageFront: front.renderOutput(),
     imageBack: back.renderOutput(),
     borderMode,
-    name, orderId,
-    email: document.getElementById('email').value.trim(),
+    name, orderId, email,
     note: document.getElementById('note').value.trim(),
     submittedAt: new Date().toISOString()
   };
