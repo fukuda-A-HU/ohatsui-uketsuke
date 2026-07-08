@@ -32,8 +32,8 @@ function doPost(e) {
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 50);
     const base  = (safe(data.orderId) || 'noorder') + '_' + (safe(data.name) || 'noname');
     const stamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
-    // 印刷モード（フチあり/ふちなし）。出品者がSELPHYでの印刷方法を判断するために記録
-    const mode  = (data.borderMode === 'フチあり' || data.borderMode === 'ふちなし') ? data.borderMode : '未指定';
+    // 印刷モード（フチあり/フチなし）。出品者がSELPHYでの印刷方法を判断するために記録
+    const mode  = (data.borderMode === 'フチあり' || data.borderMode === 'フチなし') ? data.borderMode : '未指定';
 
     // 表面・裏面の2枚を保存
     const savedUrls = {};

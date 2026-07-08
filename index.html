@@ -69,21 +69,21 @@
   #status.load{display:block;background:#eef2ff;color:#4a5bd0;}
   .config-warn{background:#fdecec;border:1px solid #f5b5b5;color:#c0392b;border-radius:10px;
     padding:10px 12px;font-size:12.5px;margin-bottom:14px;}
-  /* 画像使用の注意事項リンク（規約未確認は送信不可）。完成見本の下に置く */
-  .terms-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
-    padding:13px 12px;margin-top:12px;border:2px solid var(--accent2);border-radius:12px;
-    background:#f0f8fb;color:var(--accent2);font-weight:700;font-size:13.5px;text-decoration:none;
-    cursor:pointer;text-align:center;}
-  .terms-link:hover{background:#e4f1f7;}
-  .terms-link.done{border-color:var(--ok);background:#eef9f2;color:var(--ok);}
-  .terms-status{font-size:12px;color:var(--muted);margin:10px 0 0;text-align:center;}
-  .terms-status.done{color:var(--ok);font-weight:700;}
+  /* 画像使用の注意事項（受付画面内に統合） */
+  .terms-lead{margin:0 0 4px;font-size:14px;}
+  .terms-h{font-size:15px;font-weight:700;margin:16px 0 4px;color:var(--text);}
+  .card ul.terms-list{margin:6px 0 4px;padding-left:22px;}
+  .card ul.terms-list li{margin:6px 0;font-size:13.5px;}
+  .terms-agree{display:flex;align-items:flex-start;gap:10px;margin:16px 0 0;padding:12px;
+    border:2px solid var(--accent2);border-radius:12px;background:#f0f8fb;cursor:pointer;
+    font-weight:700;font-size:14px;}
+  .terms-agree.done{border-color:var(--ok);background:#eef9f2;color:var(--ok);}
+  .terms-agree input{accent-color:var(--accent);width:20px;height:20px;flex:none;margin-top:1px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="badge">PHOTO KEY</span>
     <h1>おはツイキーホルダー 画像受付</h1>
     <p>キーホルダーの<b>表面・裏面</b>それぞれの画像をアップロードしてください</p>
   </header>
@@ -99,15 +99,15 @@
     <div class="modes">
       <label><input type="radio" name="borderMode" value="フチあり" checked>
         <span>フチあり<small>写真のまわりに白いフチを付けて印刷</small></span></label>
-      <label><input type="radio" name="borderMode" value="ふちなし">
-        <span>ふちなし<small>写真を用紙の端まで印刷（フチなし）</small></span></label>
+      <label><input type="radio" name="borderMode" value="フチなし">
+        <span>フチなし<small>写真を用紙の端まで印刷</small></span></label>
     </div>
   </div>
 
   <!-- ===== 表面 ===== -->
   <div class="card">
     <p class="step">STEP 1 — 表面（おもて）の画像</p>
-    <p class="side-title">表面 <small>キーホルダーのおもて側</small></p>
+    <p class="side-title">表面</p>
     <label class="filebtn" for="frontFileInput" id="frontFileLabel">
       📷 表面の画像を選択（タップ）
     </label>
@@ -136,7 +136,7 @@
   <!-- ===== 裏面 ===== -->
   <div class="card">
     <p class="step">STEP 2 — 裏面（うら）の画像</p>
-    <p class="side-title">裏面 <small>キーホルダーのうら側</small></p>
+    <p class="side-title">裏面</p>
     <label class="filebtn" for="backFileInput" id="backFileLabel">
       📷 裏面の画像を選択（タップ）
     </label>
@@ -170,8 +170,8 @@
     <label>BOOTHの注文番号 <span class="req">必須</span></label>
     <input type="text" id="orderId" placeholder="例：12345678">
 
-    <label>メールアドレス（任意）</label>
-    <input type="email" id="email" placeholder="連絡用（任意）">
+    <label>メールアドレス <span class="req">必須</span></label>
+    <input type="email" id="email" placeholder="例：you@example.com">
 
     <label>キーホルダーにかざしたとき開くURL <span class="req">必須</span></label>
     <input type="url" id="nfcUrl" placeholder="https://example.com/...">
@@ -182,12 +182,42 @@
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
 
     <div class="note">
-      ※ <b>表面・裏面の2枚とも</b>設定してから送信してください。<br>
-      ※ 第三者の著作権・肖像権を侵害する画像はお取り扱いできません。<br>
-      ※ 送信後、内容を確認のうえ製作いたします。
+      ※ <b>表面・裏面の2枚とも</b>設定してから送信してください。
     </div>
+  </div>
 
-    <a href="terms.html" target="_blank" rel="noopener" id="termsLink" class="terms-link">📄 画像使用に関する注意事項を確認する</a>
+  <!-- ===== 画像使用に関する注意事項（受付画面に統合） ===== -->
+  <div class="card" id="termsCard">
+    <p class="step">STEP 4 — 画像使用に関する注意事項</p>
+    <p class="side-title">送信前に必ずお読みください</p>
+
+    <p class="terms-h">1. ご入稿いただける画像</p>
+    <ul class="terms-list">
+      <li>お客様ご自身が撮影・作成された画像のほか、お客様が正当に使用できる権利をお持ちの画像をご利用いただけます。</li>
+      <li>第三者が権利を持つ素材を利用される場合は、その素材の利用条件（商用利用の可否・加工の可否・クレジット表記の要否など）をお客様ご自身でご確認・遵守ください。</li>
+    </ul>
+
+    <p class="terms-h">2. 次のような画像はご遠慮ください</p>
+    <ul class="terms-list">
+      <li>企業・店舗のロゴやマーク（所属・委託関係を証明できる場合を除き、原則お受けできません）。</li>
+      <li>その他、第三者の著作権・肖像権・商標権などの権利を侵害する画像。</li>
+    </ul>
+
+    <p class="terms-h">3. ご利用の範囲</p>
+    <ul class="terms-list">
+      <li>個人的にお楽しみいただく範囲でのご利用をお願いします。営利目的での転売や、フリマアプリ・オークションサイト等への出品を目的とした作成はご遠慮ください。</li>
+    </ul>
+
+    <p class="terms-h">4. 免責事項</p>
+    <ul class="terms-list">
+      <li>ご入稿いただいた画像に起因して、第三者との間で権利侵害に関するトラブルが生じた場合、製作者は一切の責任を負いかねます。あらかじめご了承ください。</li>
+    </ul>
+
+    <label class="terms-agree" id="termsAgreeLabel">
+      <input type="checkbox" id="agreeTerms">
+      <span>上記の「画像使用に関する注意事項」を確認し、同意します</span>
+    </label>
+
     <button class="primary" id="submitBtn" type="button" disabled>この画像で送信する</button>
     <div id="status"></div>
   </div>
@@ -217,18 +247,12 @@ let borderMode = 'フチあり';
 const formCard=document.getElementById('formCard');
 const statusEl=document.getElementById('status');
 const submitBtn=document.getElementById('submitBtn');
-const termsStatus=document.getElementById('termsStatus');
-let termsOpened=false;
-function markTermsDone(){
-  termsOpened=true;
-  document.querySelectorAll('.terms-link').forEach(el=>{
-    el.classList.add('done');
-    el.textContent='✓ 注意事項を確認しました';
-  });
-  if(termsStatus){termsStatus.textContent='✓ 注意事項を確認しました。ご注文いただけます。';termsStatus.classList.add('done');}
-  submitBtn.disabled=false;
-}
-document.querySelectorAll('.terms-link').forEach(el=>el.addEventListener('click',markTermsDone));
+const agreeTerms=document.getElementById('agreeTerms');
+const termsAgreeLabel=document.getElementById('termsAgreeLabel');
+agreeTerms.addEventListener('change',()=>{
+  submitBtn.disabled=!agreeTerms.checked;
+  termsAgreeLabel.classList.toggle('done',agreeTerms.checked);
+});
 
 /* NFCタグ書き込み用URLの文字数カウンター（NTAG213の上限130文字） */
 const nfcUrlInput=document.getElementById('nfcUrl');
@@ -367,7 +391,7 @@ const back =createEditor('back');
 function updateModeLabels(){
   const cap = borderMode==='フチあり'
     ? '印刷される用紙の見た目です（フチあり：均一フチ＋下に余白／上部がキーホルダーになります）'
-    : '印刷される用紙の見た目です（ふちなし：下に余白／上部がキーホルダーになります）';
+    : '印刷される用紙の見た目です（フチなし：下に余白／上部がキーホルダーになります）';
   ['front','back'].forEach(p=>{
     document.getElementById(p+'PreviewLabel').textContent='完成見本（'+borderMode+'）';
     document.getElementById(p+'PreviewCap').textContent=cap;
@@ -383,13 +407,16 @@ document.querySelectorAll('input[name="borderMode"]').forEach(r=>{
 updateModeLabels();
 
 submitBtn.addEventListener('click',async()=>{
-  if(!termsOpened){alert('先に「画像使用に関する注意事項」をご確認ください');return;}
+  if(!agreeTerms.checked){alert('「画像使用に関する注意事項」に同意してください');return;}
   const name=document.getElementById('buyerName').value.trim();
   const orderId=document.getElementById('orderId').value.trim();
+  const email=document.getElementById('email').value.trim();
   if(!front.hasImage()){alert('表面の画像を選択してください');return;}
   if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
   if(!name){alert('お名前・ハンドルネームを入力してください');return;}
   if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
+  if(!email){alert('メールアドレスを入力してください');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('メールアドレスの形式が正しくありません');return;}
   const nfcUrlValue=nfcUrlInput.value.trim();
   if(!nfcUrlValue){alert('NFCタグに書き込むURLを入力してください');return;}
   let nfcUrlObj;
@@ -405,8 +432,7 @@ submitBtn.addEventListener('click',async()=>{
     imageFront: front.renderOutput(),
     imageBack: back.renderOutput(),
     borderMode,
-    name, orderId,
-    email: document.getElementById('email').value.trim(),
+    name, orderId, email,
     note: document.getElementById('note').value.trim(),
     nfcUrl: document.getElementById('nfcUrl').value.trim(),
     submittedAt: new Date().toISOString()
