@@ -58,6 +58,9 @@
   button.ghost{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;
     padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;}
   .req{color:var(--accent);font-size:12px;}
+  .field-note{font-size:12px;color:var(--muted);margin:6px 0 0;}
+  .char-counter{font-size:12px;color:var(--muted);text-align:right;margin-top:4px;}
+  .char-counter.over{color:var(--accent);}
   .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;
     font-size:12.5px;color:#9a5b1e;margin-top:10px;}
   #status{display:none;text-align:center;padding:18px;border-radius:12px;font-weight:700;margin-top:8px;}
@@ -170,6 +173,11 @@
     <label>メールアドレス（任意）</label>
     <input type="email" id="email" placeholder="連絡用（任意）">
 
+    <label>キーホルダーにかざしたとき開くURL <span class="req">必須</span></label>
+    <input type="url" id="nfcUrl" placeholder="https://example.com/...">
+    <p class="field-note">NFCタグ（NTAG213）の容量の都合で、URLは<b>130文字以内</b>でご記入ください。</p>
+    <p class="char-counter" id="nfcUrlCounter">0 / 130</p>
+
     <label>備考・ご要望（任意）</label>
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
 
@@ -221,6 +229,17 @@ function markTermsDone(){
   submitBtn.disabled=false;
 }
 document.querySelectorAll('.terms-link').forEach(el=>el.addEventListener('click',markTermsDone));
+
+/* NFCタグ書き込み用URLの文字数カウンター（NTAG213の上限130文字） */
+const nfcUrlInput=document.getElementById('nfcUrl');
+const nfcUrlCounter=document.getElementById('nfcUrlCounter');
+function updateNfcUrlCounter(){
+  const len=nfcUrlInput.value.length;
+  nfcUrlCounter.textContent=len+' / 130';
+  nfcUrlCounter.classList.toggle('over',len>130);
+}
+nfcUrlInput.addEventListener('input',updateNfcUrlCounter);
+updateNfcUrlCounter();
 
 if(!ENDPOINT_URL){document.getElementById('configWarn').style.display='block';}
 
@@ -371,6 +390,12 @@ submitBtn.addEventListener('click',async()=>{
   if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
   if(!name){alert('お名前・ハンドルネームを入力してください');return;}
   if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
+  const nfcUrlValue=nfcUrlInput.value.trim();
+  if(!nfcUrlValue){alert('NFCタグに書き込むURLを入力してください');return;}
+  let nfcUrlObj;
+  try{ nfcUrlObj=new URL(nfcUrlValue); }catch(e){ alert('URLは http:// または https:// で始めてください'); return; }
+  if(nfcUrlObj.protocol!=='http:'&&nfcUrlObj.protocol!=='https:'){alert('URLは http:// または https:// で始めてください');return;}
+  if(nfcUrlValue.length>130){alert('URLが長すぎます（NFCタグの上限は130文字です）');return;}
   if(!ENDPOINT_URL){alert('送信先が未設定です。管理者にお問い合わせください。');return;}
 
   submitBtn.disabled=true;
@@ -383,6 +408,7 @@ submitBtn.addEventListener('click',async()=>{
     name, orderId,
     email: document.getElementById('email').value.trim(),
     note: document.getElementById('note').value.trim(),
+    nfcUrl: document.getElementById('nfcUrl').value.trim(),
     submittedAt: new Date().toISOString()
   };
   try{
