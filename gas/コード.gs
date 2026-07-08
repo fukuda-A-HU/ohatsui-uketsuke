@@ -71,7 +71,8 @@ function doPost(e) {
         data.note || '',
         savedUrls.Front,
         savedUrls.Back,
-        mode
+        mode,
+        data.nfcUrl || ''
       ]);
     } catch (logErr) {
       Logger.log('スプレッドシート記録に失敗しました: ' + logErr);
@@ -99,7 +100,7 @@ function getUploadFolder_() {
  * 3. どちらも無ければ新規作成し、ヘッダ行を書き込んで ID を保存する
  */
 function getLogSheet_() {
-  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定'];
+  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定', 'NFC URL'];
   let sheet;
 
   if (SHEET_ID) {
@@ -118,9 +119,17 @@ function getLogSheet_() {
     }
   }
 
-  // 既存シートの見出しに『フチ設定』列が無ければ補う（旧バージョンからの引き継ぎ用）
-  if (sheet.getLastRow() >= 1 && sheet.getRange(1, HEADER.length).getValue() === '') {
-    sheet.getRange(1, HEADER.length).setValue('フチ設定');
+  // 既存シートの見出しに『フチ設定』『NFC URL』列が無ければ補う（旧バージョンからの引き継ぎ用）。
+  // 末尾列だけを見るとどの列名が欠けているか判定できないため、見出し行全体を読んで確認する。
+  if (sheet.getLastRow() >= 1) {
+    const existing = sheet.getRange(1, 1, 1, sheet.getLastColumn() || 1).getValues()[0];
+    if (existing.indexOf('フチ設定') === -1) {
+      sheet.getRange(1, existing.length + 1).setValue('フチ設定');
+      existing.push('フチ設定');
+    }
+    if (existing.indexOf('NFC URL') === -1) {
+      sheet.getRange(1, existing.length + 1).setValue('NFC URL');
+    }
   }
   return sheet;
 }
