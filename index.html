@@ -162,8 +162,17 @@
     </div>
   </div>
 
+  <!-- ===== NFCタグに書き込むURL ===== -->
+  <div class="card" id="nfcCard">
+    <p class="step">STEP 3 — キーホルダーにかざしたとき開くURL</p>
+    <label>URL <span class="req">必須</span></label>
+    <input type="url" id="nfcUrl" placeholder="https://example.com/...">
+    <p class="field-note">NFCタグ（NTAG213）の容量の都合で、URLは<b>130文字以内</b>でご記入ください。</p>
+    <p class="char-counter" id="nfcUrlCounter">0 / 130</p>
+  </div>
+
   <div class="card" id="formCard">
-    <p class="step">STEP 3 — ご注文情報</p>
+    <p class="step">STEP 4 — ご注文情報</p>
     <label>お名前・ハンドルネーム <span class="req">必須</span></label>
     <input type="text" id="buyerName" placeholder="例：あくん">
 
@@ -172,11 +181,6 @@
 
     <label>メールアドレス <span class="req">必須</span></label>
     <input type="email" id="email" placeholder="例：you@example.com">
-
-    <label>キーホルダーにかざしたとき開くURL <span class="req">必須</span></label>
-    <input type="url" id="nfcUrl" placeholder="https://example.com/...">
-    <p class="field-note">NFCタグ（NTAG213）の容量の都合で、URLは<b>130文字以内</b>でご記入ください。</p>
-    <p class="char-counter" id="nfcUrlCounter">0 / 130</p>
 
     <label>備考・ご要望（任意）</label>
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
@@ -188,7 +192,7 @@
 
   <!-- ===== 画像使用に関する注意事項（受付画面に統合） ===== -->
   <div class="card" id="termsCard">
-    <p class="step">STEP 4 — 画像使用に関する注意事項</p>
+    <p class="step">STEP 5 — 画像使用に関する注意事項</p>
     <p class="side-title">送信前に必ずお読みください</p>
 
     <p class="terms-h">1. ご入稿いただける画像</p>
