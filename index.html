@@ -165,21 +165,20 @@
   <!-- ===== NFCタグに書き込むURL ===== -->
   <div class="card" id="nfcCard">
     <p class="step">STEP 3 — キーホルダーにかざしたとき開くURL</p>
-    <label>URL <span class="req">必須</span></label>
+    <label>URL</label>
     <input type="url" id="nfcUrl" placeholder="https://example.com/...">
-    <p class="field-note">NFCタグ（NTAG213）の容量の都合で、URLは<b>130文字以内</b>でご記入ください。</p>
     <p class="char-counter" id="nfcUrlCounter">0 / 130</p>
   </div>
 
   <div class="card" id="formCard">
     <p class="step">STEP 4 — ご注文情報</p>
-    <label>お名前・ハンドルネーム <span class="req">必須</span></label>
+    <label>お名前・ハンドルネーム</label>
     <input type="text" id="buyerName" placeholder="例：あくん">
 
-    <label>BOOTHの注文番号 <span class="req">必須</span></label>
+    <label>BOOTHの注文番号</label>
     <input type="text" id="orderId" placeholder="例：12345678">
 
-    <label>メールアドレス <span class="req">必須</span></label>
+    <label>メールアドレス</label>
     <input type="email" id="email" placeholder="例：you@example.com">
 
     <label>備考・ご要望（任意）</label>
@@ -417,16 +416,14 @@ submitBtn.addEventListener('click',async()=>{
   const email=document.getElementById('email').value.trim();
   if(!front.hasImage()){alert('表面の画像を選択してください');return;}
   if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
-  if(!name){alert('お名前・ハンドルネームを入力してください');return;}
-  if(!orderId){alert('BOOTHの注文番号を入力してください');return;}
-  if(!email){alert('メールアドレスを入力してください');return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('メールアドレスの形式が正しくありません');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('メールアドレスの形式が正しくありません');return;}
   const nfcUrlValue=nfcUrlInput.value.trim();
-  if(!nfcUrlValue){alert('NFCタグに書き込むURLを入力してください');return;}
-  let nfcUrlObj;
-  try{ nfcUrlObj=new URL(nfcUrlValue); }catch(e){ alert('URLは http:// または https:// で始めてください'); return; }
-  if(nfcUrlObj.protocol!=='http:'&&nfcUrlObj.protocol!=='https:'){alert('URLは http:// または https:// で始めてください');return;}
-  if(nfcUrlValue.length>130){alert('URLが長すぎます（NFCタグの上限は130文字です）');return;}
+  if(nfcUrlValue){
+    let nfcUrlObj;
+    try{ nfcUrlObj=new URL(nfcUrlValue); }catch(e){ alert('URLは http:// または https:// で始めてください'); return; }
+    if(nfcUrlObj.protocol!=='http:'&&nfcUrlObj.protocol!=='https:'){alert('URLは http:// または https:// で始めてください');return;}
+    if(nfcUrlValue.length>130){alert('URLが長すぎます（130文字以内でご記入ください）');return;}
+  }
   if(!ENDPOINT_URL){alert('送信先が未設定です。管理者にお問い合わせください。');return;}
 
   submitBtn.disabled=true;
