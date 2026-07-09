@@ -100,7 +100,7 @@
       <label><input type="radio" name="borderMode" value="フチあり" checked>
         <span>フチあり<small>写真のまわりに白いフチを付けて印刷</small></span></label>
       <label><input type="radio" name="borderMode" value="フチなし">
-        <span>フチなし<small>写真を用紙の端まで印刷</small></span></label>
+        <span>フチなし<small>写真を用紙の端まで印刷。<b>製造上のずれで端が数mm切れることがあります</b>（塗り足し3mmを含めて処理）</small></span></label>
     </div>
   </div>
 
@@ -124,7 +124,7 @@
         <span>大</span>
         <button class="ghost" id="frontReset" type="button">リセット</button>
       </div>
-      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。</p>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。特にフチなしは端の数mmが製造誤差で切れることがあるので、大切な要素は中央寄りに置いてください。</p>
       <div class="preview-wrap">
         <p class="preview-label" id="frontPreviewLabel">完成見本</p>
         <canvas class="preview" id="frontPreview"></canvas>
@@ -153,7 +153,7 @@
         <span>大</span>
         <button class="ghost" id="backReset" type="button">リセット</button>
       </div>
-      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。</p>
+      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。特にフチなしは端の数mmが製造誤差で切れることがあるので、大切な要素は中央寄りに置いてください。</p>
       <div class="preview-wrap">
         <p class="preview-label" id="backPreviewLabel">完成見本</p>
         <canvas class="preview" id="backPreview"></canvas>
@@ -239,6 +239,10 @@ const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyWEE9jC8R_nFbDjuZ
 const PRINT_W_MM = 54, PRINT_H_MM = 72, DPI = 300;
 const OUT_W = Math.round(PRINT_W_MM / 25.4 * DPI); // 54mm → 638px
 const OUT_H = Math.round(PRINT_H_MM / 25.4 * DPI); // 72mm → 850px
+/* フチなし印刷時の塗り足し(mm)。SELPHYの断裁ずれを吸収するため仕上がりの外側に追加する */
+const BLEED_MM = 3;
+const OUT_W_BLEED = Math.round((PRINT_W_MM + BLEED_MM * 2) / 25.4 * DPI); // 60mm → 709px
+const OUT_H_BLEED = Math.round((PRINT_H_MM + BLEED_MM * 2) / 25.4 * DPI); // 78mm → 921px
 /* フチあり印刷の白フチ幅(実測ベース, mm)。フチあり時に左右上へ均一に付く */
 const FUCHI_MM = 3.7;
 /* SELPHYカードサイズ用紙の実測比（プレビュー枠 512×805px ≒ 54×85mm 縦）。完成見本は用紙レイアウトを再現 */
@@ -372,15 +376,24 @@ function createEditor(prefix){
   window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
   function renderOutput(){
-    // ステージ全体（＝仕上がり54×72mm 縦向き）を OUT_W×OUT_H に書き出す（白フチは印刷時にSELPHY側で付与）
+    // フチなしは断裁ずれ対策として塗り足し3mm込みで書き出す（フチありは仕上がり枠のみ）
+    const bleed=(borderMode==='フチなし');
+    const outW=bleed?OUT_W_BLEED:OUT_W;
+    const outH=bleed?OUT_H_BLEED:OUT_H;
     const out=document.createElement('canvas');
-    out.width=OUT_W; out.height=OUT_H;
+    out.width=outW; out.height=outH;
     const octx=out.getContext('2d');
-    octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUT_W,OUT_H);
+    octx.fillStyle='#ffffff'; octx.fillRect(0,0,outW,outH);
     const s=scaleBase*view.scale;
-    const sx=(0-view.x)/s, sy=(0-view.y)/s;
-    const sw=canvas.width/s, sh=canvas.height/s;
-    octx.drawImage(img, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+    const stageX=(0-view.x)/s, stageY=(0-view.y)/s;
+    const stageW=canvas.width/s, stageH=canvas.height/s;
+    if(bleed){
+      const bleedX=stageW*BLEED_MM/PRINT_W_MM;
+      const bleedY=stageH*BLEED_MM/PRINT_H_MM;
+      octx.drawImage(img, stageX-bleedX, stageY-bleedY, stageW+bleedX*2, stageH+bleedY*2, 0, 0, outW, outH);
+    }else{
+      octx.drawImage(img, stageX, stageY, stageW, stageH, 0, 0, outW, outH);
+    }
     return out.toDataURL('image/png');
   }
 
