@@ -376,24 +376,18 @@ function createEditor(prefix){
   window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
   function renderOutput(){
-    // フチなしは断裁ずれ対策として塗り足し3mm込みで書き出す（フチありは仕上がり枠のみ）
-    const bleed=(borderMode==='フチなし');
-    const outW=bleed?OUT_W_BLEED:OUT_W;
-    const outH=bleed?OUT_H_BLEED:OUT_H;
+    // フチ設定に関係なく常に塗り足し3mm込み(709×921px, 60×78mm)で書き出す。
+    // フチあり印刷時は中央 638×850px(54×72mm) を仕上がり領域として扱う
     const out=document.createElement('canvas');
-    out.width=outW; out.height=outH;
+    out.width=OUT_W_BLEED; out.height=OUT_H_BLEED;
     const octx=out.getContext('2d');
-    octx.fillStyle='#ffffff'; octx.fillRect(0,0,outW,outH);
+    octx.fillStyle='#ffffff'; octx.fillRect(0,0,OUT_W_BLEED,OUT_H_BLEED);
     const s=scaleBase*view.scale;
     const stageX=(0-view.x)/s, stageY=(0-view.y)/s;
     const stageW=canvas.width/s, stageH=canvas.height/s;
-    if(bleed){
-      const bleedX=stageW*BLEED_MM/PRINT_W_MM;
-      const bleedY=stageH*BLEED_MM/PRINT_H_MM;
-      octx.drawImage(img, stageX-bleedX, stageY-bleedY, stageW+bleedX*2, stageH+bleedY*2, 0, 0, outW, outH);
-    }else{
-      octx.drawImage(img, stageX, stageY, stageW, stageH, 0, 0, outW, outH);
-    }
+    const bleedX=stageW*BLEED_MM/PRINT_W_MM;
+    const bleedY=stageH*BLEED_MM/PRINT_H_MM;
+    octx.drawImage(img, stageX-bleedX, stageY-bleedY, stageW+bleedX*2, stageH+bleedY*2, 0, 0, OUT_W_BLEED, OUT_H_BLEED);
     return out.toDataURL('image/png');
   }
 
