@@ -33,15 +33,22 @@ function doPost(e) {
 
     // ファイル名に使えない文字を除去し、長すぎる名前を防ぐ
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 50);
-    const base  = (safe(data.orderId) || 'noorder') + '_' + (safe(data.name) || 'noname');
     const stamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
     // 商品タイプ（未指定時は互換のためキーホルダー扱い）
     const productType = (data.productType === '缶バッジ') ? '缶バッジ' : 'キーホルダー';
     const isBadge = productType === '缶バッジ';
+    // 注文経路（Booth / リアルイベント現地）。未指定時は互換のため Booth 扱い
+    const orderSource = (data.orderSource === 'リアルイベント現地') ? 'リアルイベント現地' : 'Booth';
     // 印刷モード（フチあり/フチなし）。缶バッジはフチ設定なし
     const mode = isBadge
       ? '缶バッジ'
       : ((data.borderMode === 'フチあり' || data.borderMode === 'フチなし') ? data.borderMode : '未指定');
+
+    // ファイル名用ベース（現地注文は注文番号の代わりに event を使う）
+    const orderPart = (orderSource === 'リアルイベント現地')
+      ? 'event'
+      : (safe(data.orderId) || 'noorder');
+    const base = orderPart + '_' + (safe(data.name) || 'noname');
 
     // 表面・裏面を保存（裏面はキーホルダーのみ必須）
     const savedUrls = {};
@@ -84,13 +91,14 @@ function doPost(e) {
         savedUrls.Back || '',
         mode,
         data.nfcUrl || '',
-        productType
+        productType,
+        orderSource
       ]);
     } catch (logErr) {
       Logger.log('スプレッドシート記録に失敗しました: ' + logErr);
     }
 
-    return jsonOut({ status: 'ok', files: savedUrls, productType: productType });
+    return jsonOut({ status: 'ok', files: savedUrls, productType: productType, orderSource: orderSource });
   } catch (err) {
     return jsonOut({ status: 'error', message: String(err) });
   }
@@ -112,7 +120,7 @@ function getUploadFolder_() {
  * 3. どちらも無ければ新規作成し、ヘッダ行を書き込んで ID を保存する
  */
 function getLogSheet_() {
-  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定', 'NFC URL', '商品タイプ'];
+  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定', 'NFC URL', '商品タイプ', '注文経路'];
   let sheet;
 
   if (SHEET_ID) {
@@ -134,7 +142,7 @@ function getLogSheet_() {
   // 既存シートの見出しに不足列があれば末尾へ補う（旧バージョンからの引き継ぎ用）
   if (sheet.getLastRow() >= 1) {
     const existing = sheet.getRange(1, 1, 1, sheet.getLastColumn() || 1).getValues()[0];
-    ['フチ設定', 'NFC URL', '商品タイプ'].forEach(function (colName) {
+    ['フチ設定', 'NFC URL', '商品タイプ', '注文経路'].forEach(function (colName) {
       if (existing.indexOf(colName) === -1) {
         sheet.getRange(1, existing.length + 1).setValue(colName);
         existing.push(colName);

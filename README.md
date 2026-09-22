@@ -6,6 +6,7 @@
 ## 機能
 
 - **商品タイプ選択**：キーホルダー または 缶バッジ
+- **注文経路選択**：Booth（注文番号必須）／リアルイベント現地（注文番号不要）
 - **キーホルダー**
   - **表面・裏面 2枚**の画像をそれぞれアップロード（両面とも必須）
   - **印刷方法（フチあり／ふちなし）を購入者が選択**でき、選択内容も送信されます
@@ -21,7 +22,7 @@
 ## セットアップ
 
 1. `gas/コード.gs` の手順に従い Google Apps Script をウェブアプリとしてデプロイします
-   （`productType` と表面 `imageFront`／裏面 `imageBack` を受け取り Google Drive に保存します。缶バッジ時は裏面なしでも可）。
+   （`productType` / `orderSource` と表面 `imageFront`／裏面 `imageBack` を受け取り Google Drive に保存します。缶バッジ時は裏面なしでも可。現地注文時は注文番号なしでも可）。
 2. 発行された `/exec` URL を `index.html` 冒頭の `ENDPOINT_URL` に貼り付けます。
 3. `index.html` を Web ホスティング（GitHub Pages 等）に置いて公開します。
 
