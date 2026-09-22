@@ -1,11 +1,12 @@
 # GAS（受け取りサーバー）— clasp でのデプロイ
 
-`index.html` から送られる表面/裏面の2枚を Google Drive に保存する Web アプリです。
+`index.html` から送られる画像を Google Drive に保存する Web アプリです。
+キーホルダーは表面/裏面の2枚、缶バッジは表面のみを受け付けます。
 [clasp](https://github.com/google/clasp) でデプロイします。
 
 ## 構成
 
-- `コード.gs` … 本体（`doPost` で2枚受信 → Drive 保存、`doGet` は疎通確認）
+- `コード.gs` … 本体（`doPost` で `productType` + 画像受信 → Drive 保存、`doGet` は疎通確認）
 - `appsscript.json` … マニフェスト（Webアプリ設定・OAuthスコープ込み）
 - リポジトリ直下の `.clasp.json` … `rootDir: gas` を指定（`scriptId` は `clasp create` で自動入力）
 
