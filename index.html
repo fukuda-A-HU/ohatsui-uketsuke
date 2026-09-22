@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>おはツイキーホルダー 画像受付フォーム</title>
+<title>おはツイ 画像受付フォーム</title>
 <style>
   :root{
     --accent:#ff6b6b; --accent2:#4aa3c7; --bg:#eef6f4; --card:#ffffff;
@@ -24,7 +24,7 @@
   .side-title{font-size:16px;font-weight:700;margin:0 0 4px;}
   .side-title small{font-weight:400;color:var(--muted);font-size:12px;}
   label{display:block;font-weight:700;font-size:14px;margin:14px 0 6px;}
-  input[type=text],input[type=email],textarea{width:100%;padding:11px 12px;border:1px solid var(--line);
+  input[type=text],input[type=email],input[type=url],textarea{width:100%;padding:11px 12px;border:1px solid var(--line);
     border-radius:10px;font-size:15px;font-family:inherit;background:#fafbfc;}
   textarea{resize:vertical;min-height:70px;}
   .filebtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
@@ -33,9 +33,10 @@
   .filebtn:hover{background:#f0f4f8;}
   input[type=file]{display:none;}
   .cropwrap{display:none;margin-top:8px;}
-  /* ステージ＝仕上がり(キーホルダー挿入)サイズ 54×72mm 縦向き。ここに写った画像がそのまま印刷される */
+  /* ステージ＝仕上がりサイズ。キーホルダーは 54×72mm、缶バッジは円形 Ø58mm */
   .stage{position:relative;width:100%;aspect-ratio:54/72;background:#1b2733;border-radius:12px;
     overflow:hidden;touch-action:none;cursor:grab;}
+  .stage.circular{aspect-ratio:1/1;border-radius:50%;max-width:320px;margin:0 auto;}
   .stage canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
   .controls{display:flex;align-items:center;gap:10px;margin-top:12px;}
   .controls span{font-size:12px;color:var(--muted);white-space:nowrap;}
@@ -46,11 +47,14 @@
     padding:11px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#fafbfc;}
   .modes input{accent-color:var(--accent);width:18px;height:18px;flex:none;}
   .modes small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px;}
+  .product-modes{display:flex;gap:8px;margin-top:6px;}
+  .product-modes label{flex:1;justify-content:center;text-align:center;}
   /* 完成見本（印刷モード反映）プレビュー */
   .preview-wrap{margin-top:16px;text-align:center;}
   .preview-label{font-size:12px;font-weight:700;color:var(--accent2);margin:0 0 8px;}
   .preview{width:100%;max-width:200px;aspect-ratio:54/85;background:#fff;border:1px solid var(--line);
     border-radius:0;box-shadow:0 3px 12px rgba(40,60,80,.14);display:inline-block;vertical-align:top;}
+  .preview.circular{aspect-ratio:1/1;border-radius:50%;max-width:180px;background:#1b2733;border:none;}
   .preview-cap{font-size:11px;color:var(--muted);margin:6px 0 0;}
   button.primary{width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
     color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;}
@@ -84,17 +88,29 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>おはツイキーホルダー 画像受付</h1>
-    <p>キーホルダーの<b>表面・裏面</b>それぞれの画像をアップロードしてください</p>
+    <h1 id="pageTitle">おはツイキーホルダー 画像受付</h1>
+    <p id="pageLead">キーホルダーの<b>表面・裏面</b>それぞれの画像をアップロードしてください</p>
   </header>
 
   <div id="configWarn" class="config-warn" style="display:none;">
     ⚠ 送信先（Google Drive）が未設定です。管理者はファイル冒頭の <b>ENDPOINT_URL</b> を設定してください。
   </div>
 
-  <!-- ===== 印刷方法の選択 ===== -->
+  <!-- ===== 商品タイプ ===== -->
   <div class="card">
-    <p class="step">STEP 0 — 印刷方法を選ぶ</p>
+    <p class="step">STEP 0 — 商品を選ぶ</p>
+    <p class="side-title">商品タイプ</p>
+    <div class="modes product-modes">
+      <label><input type="radio" name="productType" value="キーホルダー" checked>
+        <span>キーホルダー<small>両面・縦向き 54×72mm</small></span></label>
+      <label><input type="radio" name="productType" value="缶バッジ">
+        <span>缶バッジ<small>片面・円形 Ø58mm</small></span></label>
+    </div>
+  </div>
+
+  <!-- ===== 印刷方法の選択（キーホルダーのみ） ===== -->
+  <div class="card" id="borderCard">
+    <p class="step" id="borderStepLabel">STEP 1 — 印刷方法を選ぶ</p>
     <p class="side-title">仕上げ <small>下の完成見本に反映されます</small></p>
     <div class="modes">
       <label><input type="radio" name="borderMode" value="フチあり" checked>
@@ -105,16 +121,16 @@
   </div>
 
   <!-- ===== 表面 ===== -->
-  <div class="card">
-    <p class="step">STEP 1 — 表面（おもて）の画像</p>
-    <p class="side-title">表面</p>
+  <div class="card" id="frontCard">
+    <p class="step" id="frontStepLabel">STEP 2 — 表面（おもて）の画像</p>
+    <p class="side-title" id="frontSideTitle">表面</p>
     <label class="filebtn" for="frontFileInput" id="frontFileLabel">
       📷 表面の画像を選択（タップ）
     </label>
     <input type="file" id="frontFileInput" accept="image/*">
 
     <div class="cropwrap" id="frontCropwrap">
-      <p class="step" style="margin-top:16px;">縦向き（54×72mm）に合わせて調整</p>
+      <p class="step" style="margin-top:16px;" id="frontCropHint">縦向き（54×72mm）に合わせて調整</p>
       <div class="stage" id="frontStage">
         <canvas id="frontCanvas"></canvas>
       </div>
@@ -124,7 +140,7 @@
         <span>大</span>
         <button class="ghost" id="frontReset" type="button">リセット</button>
       </div>
-      <p class="hint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。特にフチなしは端の数mmが製造誤差で切れることがあるので、大切な要素は中央寄りに置いてください。</p>
+      <p class="hint" id="frontHint">ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。特にフチなしは端の数mmが製造誤差で切れることがあるので、大切な要素は中央寄りに置いてください。</p>
       <div class="preview-wrap">
         <p class="preview-label" id="frontPreviewLabel">完成見本</p>
         <canvas class="preview" id="frontPreview"></canvas>
@@ -133,9 +149,9 @@
     </div>
   </div>
 
-  <!-- ===== 裏面 ===== -->
-  <div class="card">
-    <p class="step">STEP 2 — 裏面（うら）の画像</p>
+  <!-- ===== 裏面（キーホルダーのみ） ===== -->
+  <div class="card" id="backCard">
+    <p class="step" id="backStepLabel">STEP 3 — 裏面（うら）の画像</p>
     <p class="side-title">裏面</p>
     <label class="filebtn" for="backFileInput" id="backFileLabel">
       📷 裏面の画像を選択（タップ）
@@ -162,16 +178,16 @@
     </div>
   </div>
 
-  <!-- ===== NFCタグに書き込むURL ===== -->
+  <!-- ===== NFCタグに書き込むURL（キーホルダーのみ） ===== -->
   <div class="card" id="nfcCard">
-    <p class="step">STEP 3 — キーホルダーにかざしたとき開くURL</p>
+    <p class="step" id="nfcStepLabel">STEP 4 — キーホルダーにかざしたとき開くURL</p>
     <label>URL（任意）</label>
     <input type="url" id="nfcUrl" placeholder="https://example.com/...">
     <p class="char-counter" id="nfcUrlCounter">0 / 130</p>
   </div>
 
   <div class="card" id="formCard">
-    <p class="step">STEP 4 — ご注文情報</p>
+    <p class="step" id="formStepLabel">STEP 5 — ご注文情報</p>
     <label>お名前・ハンドルネーム</label>
     <input type="text" id="buyerName" placeholder="例：あくん">
 
@@ -184,14 +200,14 @@
     <label>備考・ご要望（任意）</label>
     <textarea id="note" placeholder="トリミング位置のご希望など"></textarea>
 
-    <div class="note">
+    <div class="note" id="formNote">
       ※ <b>表面・裏面の2枚とも</b>設定してから送信してください。
     </div>
   </div>
 
   <!-- ===== 画像使用に関する注意事項（受付画面に統合） ===== -->
   <div class="card" id="termsCard">
-    <p class="step">STEP 5 — 画像使用に関する注意事項</p>
+    <p class="step" id="termsStepLabel">STEP 6 — 画像使用に関する注意事項</p>
     <p class="side-title">送信前に必ずお読みください</p>
 
     <p class="terms-h">1. ご入稿いただける画像</p>
@@ -225,7 +241,7 @@
     <div id="status"></div>
   </div>
 
-  <p style="text-align:center;color:var(--muted);font-size:12px;">a-kun-lab / おはツイキーホルダー</p>
+  <p style="text-align:center;color:var(--muted);font-size:12px;">a-kun-lab / おはツイ</p>
 </div>
 
 <script>
@@ -247,8 +263,14 @@ const OUT_H_BLEED = Math.round((PRINT_H_MM + BLEED_MM * 2) / 25.4 * DPI); // 78m
 const FUCHI_MM = 3.7;
 /* SELPHYカードサイズ用紙の実測比（プレビュー枠 512×805px ≒ 54×85mm 縦）。完成見本は用紙レイアウトを再現 */
 const PAPER_W_MM = 54, PAPER_H_MM = 85;
-/* 印刷モード（ユーザー選択）: 'フチあり' | 'ふちなし'。既定はフチあり */
+/* 缶バッジ：直径 58mm を 300dpi で円形 PNG 出力（円外は透明） */
+const BADGE_D_MM = 58;
+const BADGE_OUT = Math.round(BADGE_D_MM / 25.4 * DPI); // 58mm → 685px
+/* 印刷モード（ユーザー選択）: 'フチあり' | 'フチなし'。既定はフチあり */
 let borderMode = 'フチあり';
+/* 商品タイプ: 'キーホルダー' | '缶バッジ' */
+let productType = 'キーホルダー';
+function isBadge(){ return productType === '缶バッジ'; }
 
 /* ----- 以降は編集不要 ----- */
 const formCard=document.getElementById('formCard');
@@ -274,6 +296,9 @@ updateNfcUrlCounter();
 
 if(!ENDPOINT_URL){document.getElementById('configWarn').style.display='block';}
 
+const KEYCHAIN_HINT='ドラッグで位置調整、スライダーで拡大縮小できます。<b>枠の中の画像がそのまま印刷されます。</b>「フチあり」を選ぶと周囲に白フチが付きます。下の<b>完成見本</b>で仕上がりを確認してください。大事な部分は端に寄せすぎないのがおすすめです。特にフチなしは端の数mmが製造誤差で切れることがあるので、大切な要素は中央寄りに置いてください。';
+const BADGE_HINT='ドラッグで位置調整、スライダーで拡大縮小できます。<b>丸い枠の中の画像がそのまま印刷されます。</b>円の外側は透明になり、缶バッジの円形に合わせて切り抜かれます。大事な部分は端に寄せすぎないのがおすすめです（製造時に外周が少し隠れることがあります）。';
+
 /* 1枚分（表 or 裏）のクロップエディタ。prefix = 'front' | 'back' */
 function createEditor(prefix){
   const fileInput=document.getElementById(prefix+'FileInput');
@@ -297,14 +322,33 @@ function createEditor(prefix){
     preview.height=Math.max(1,Math.round(pr.height));
   }
   function drawPreview(){
-    // プレビュー枠＝SELPHYカードサイズ用紙(54×85mm 縦)のレイアウトを再現
     const W=preview.width, H=preview.height;
-    pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,W,H);   // 用紙(白)
+    pctx.clearRect(0,0,W,H);
     if(!img)return;
     const s=scaleBase*view.scale;
-    // クロップ(=仕上がり54×72mm)全体を元画像座標へ逆算
     const sx=(0-view.x)/s, sy=(0-view.y)/s;
     const sw=canvas.width/s, sh=canvas.height/s;
+
+    if(isBadge()){
+      // 円形完成見本
+      pctx.fillStyle='#1b2733';
+      pctx.fillRect(0,0,W,H);
+      pctx.save();
+      pctx.beginPath();
+      pctx.arc(W/2,H/2,Math.min(W,H)/2,0,Math.PI*2);
+      pctx.closePath();
+      pctx.clip();
+      pctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+      pctx.restore();
+      pctx.strokeStyle='rgba(255,255,255,.35)'; pctx.lineWidth=2;
+      pctx.beginPath();
+      pctx.arc(W/2,H/2,Math.min(W,H)/2-1,0,Math.PI*2);
+      pctx.stroke();
+      return;
+    }
+
+    // プレビュー枠＝SELPHYカードサイズ用紙(54×85mm 縦)のレイアウトを再現
+    pctx.fillStyle='#ffffff'; pctx.fillRect(0,0,W,H);   // 用紙(白)
     // 用紙上での写真配置：上寄せ。フチあり=左右上に均一フチ／ふちなし=幅いっぱい。
     // 高さは 54:72 の比を保持するため、用紙の下側に余白が残る（＝実機の見た目）。
     let mx=0, my=0;
@@ -330,6 +374,13 @@ function createEditor(prefix){
     const s=scaleBase*view.scale;
     view.x=(canvas.width-img.width*s)/2;
     view.y=(canvas.height-img.height*s)/2;
+  }
+  function refitAfterLayoutChange(){
+    if(!img)return;
+    fitStage();
+    scaleBase=Math.max(canvas.width/img.width, canvas.height/img.height);
+    view.scale=1; zoom.value=1;
+    centerImage(); draw();
   }
   fileInput.addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f)return;
@@ -376,6 +427,22 @@ function createEditor(prefix){
   window.addEventListener('resize',()=>{if(img){fitStage();draw();}});
 
   function renderOutput(){
+    if(isBadge()){
+      // Ø58mm を 300dpi で円形 PNG（円外は透明）
+      const out=document.createElement('canvas');
+      out.width=BADGE_OUT; out.height=BADGE_OUT;
+      const octx=out.getContext('2d');
+      octx.clearRect(0,0,BADGE_OUT,BADGE_OUT);
+      octx.beginPath();
+      octx.arc(BADGE_OUT/2, BADGE_OUT/2, BADGE_OUT/2, 0, Math.PI*2);
+      octx.closePath();
+      octx.clip();
+      const s=scaleBase*view.scale;
+      const stageX=(0-view.x)/s, stageY=(0-view.y)/s;
+      const stageW=canvas.width/s, stageH=canvas.height/s;
+      octx.drawImage(img, stageX, stageY, stageW, stageH, 0, 0, BADGE_OUT, BADGE_OUT);
+      return out.toDataURL('image/png');
+    }
     // フチ設定に関係なく常に塗り足し3mm込み(709×921px, 60×78mm)で書き出す。
     // フチあり印刷時は中央 638×850px(54×72mm) を仕上がり領域として扱う
     const out=document.createElement('canvas');
@@ -391,7 +458,7 @@ function createEditor(prefix){
     return out.toDataURL('image/png');
   }
 
-  return { hasImage:()=>!!img, renderOutput, redraw:()=>draw() };
+  return { hasImage:()=>!!img, renderOutput, redraw:()=>draw(), refitAfterLayoutChange };
 }
 
 const front=createEditor('front');
@@ -399,6 +466,11 @@ const back =createEditor('back');
 
 /* 印刷モード（フチあり/ふちなし）の切替。完成見本のラベルと描画に反映 */
 function updateModeLabels(){
+  if(isBadge()){
+    document.getElementById('frontPreviewLabel').textContent='完成見本（缶バッジ Ø58mm）';
+    document.getElementById('frontPreviewCap').textContent='円形に切り抜かれた仕上がりの見た目です';
+    return;
+  }
   const cap = borderMode==='フチあり'
     ? '印刷される用紙の見た目です（フチあり：均一フチ＋下に余白／上部がキーホルダーになります）'
     : '印刷される用紙の見た目です（フチなし：下に余白／上部がキーホルダーになります）';
@@ -414,17 +486,69 @@ document.querySelectorAll('input[name="borderMode"]').forEach(r=>{
     updateModeLabels(); front.redraw(); back.redraw();
   });
 });
+
+/* 商品タイプ切替：キーホルダー／缶バッジで UI・出力を切替 */
+function applyProductType(){
+  const badge=isBadge();
+  document.getElementById('pageTitle').textContent = badge
+    ? 'おはツイ缶バッジ 画像受付'
+    : 'おはツイキーホルダー 画像受付';
+  document.getElementById('pageLead').innerHTML = badge
+    ? '缶バッジ用の画像をアップロードしてください（<b>片面・円形 Ø58mm</b>）'
+    : 'キーホルダーの<b>表面・裏面</b>それぞれの画像をアップロードしてください';
+
+  document.getElementById('borderCard').style.display = badge ? 'none' : 'block';
+  document.getElementById('backCard').style.display = badge ? 'none' : 'block';
+  document.getElementById('nfcCard').style.display = badge ? 'none' : 'block';
+
+  document.getElementById('frontStepLabel').textContent = badge
+    ? 'STEP 1 — 缶バッジの画像'
+    : 'STEP 2 — 表面（おもて）の画像';
+  document.getElementById('frontSideTitle').textContent = badge ? '画像' : '表面';
+  document.getElementById('frontCropHint').textContent = badge
+    ? '円形（Ø58mm）に合わせて調整'
+    : '縦向き（54×72mm）に合わせて調整';
+  document.getElementById('frontHint').innerHTML = badge ? BADGE_HINT : KEYCHAIN_HINT;
+  document.getElementById('frontFileLabel').textContent =
+    front.hasImage() ? '📷 別の画像に変更' : (badge ? '📷 画像を選択（タップ）' : '📷 表面の画像を選択（タップ）');
+
+  document.getElementById('borderStepLabel').textContent = 'STEP 1 — 印刷方法を選ぶ';
+  document.getElementById('backStepLabel').textContent = 'STEP 3 — 裏面（うら）の画像';
+  document.getElementById('nfcStepLabel').textContent = 'STEP 4 — キーホルダーにかざしたとき開くURL';
+  document.getElementById('formStepLabel').textContent = badge ? 'STEP 2 — ご注文情報' : 'STEP 5 — ご注文情報';
+  document.getElementById('termsStepLabel').textContent = badge ? 'STEP 3 — 画像使用に関する注意事項' : 'STEP 6 — 画像使用に関する注意事項';
+  document.getElementById('formNote').innerHTML = badge
+    ? '※ 缶バッジは<b>片面のみ</b>です。円形に合わせて調整してから送信してください。フチあり／なしの設定はありません。'
+    : '※ <b>表面・裏面の2枚とも</b>設定してから送信してください。';
+
+  const stage=document.getElementById('frontStage');
+  const preview=document.getElementById('frontPreview');
+  stage.classList.toggle('circular', badge);
+  preview.classList.toggle('circular', badge);
+
+  updateModeLabels();
+  // レイアウト変更後にステージサイズを合わせ直す
+  requestAnimationFrame(()=>front.refitAfterLayoutChange());
+}
+document.querySelectorAll('input[name="productType"]').forEach(r=>{
+  r.addEventListener('change',e=>{
+    if(!e.target.checked)return;
+    productType=e.target.value;
+    applyProductType();
+  });
+});
 updateModeLabels();
+applyProductType();
 
 submitBtn.addEventListener('click',async()=>{
   if(!agreeTerms.checked){alert('「画像使用に関する注意事項」に同意してください');return;}
   const name=document.getElementById('buyerName').value.trim();
   const orderId=document.getElementById('orderId').value.trim();
   const email=document.getElementById('email').value.trim();
-  if(!front.hasImage()){alert('表面の画像を選択してください');return;}
-  if(!back.hasImage()){alert('裏面の画像を選択してください');return;}
+  if(!front.hasImage()){alert(isBadge()?'画像を選択してください':'表面の画像を選択してください');return;}
+  if(!isBadge() && !back.hasImage()){alert('裏面の画像を選択してください');return;}
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('メールアドレスの形式が正しくありません');return;}
-  const nfcUrlValue=nfcUrlInput.value.trim();
+  const nfcUrlValue=isBadge() ? '' : nfcUrlInput.value.trim();
   if(nfcUrlValue){
     let nfcUrlObj;
     try{ nfcUrlObj=new URL(nfcUrlValue); }catch(e){ alert('URLは http:// または https:// で始めてください'); return; }
@@ -437,14 +561,17 @@ submitBtn.addEventListener('click',async()=>{
   statusEl.className='load'; statusEl.textContent='送信中… しばらくお待ちください';
 
   const payload={
+    productType,
     imageFront: front.renderOutput(),
-    imageBack: back.renderOutput(),
-    borderMode,
+    borderMode: isBadge() ? '' : borderMode,
     name, orderId, email,
     note: document.getElementById('note').value.trim(),
-    nfcUrl: document.getElementById('nfcUrl').value.trim(),
+    nfcUrl: nfcUrlValue,
     submittedAt: new Date().toISOString()
   };
+  if(!isBadge()){
+    payload.imageBack = back.renderOutput();
+  }
   try{
     // text/plain にして CORS プリフライトを回避
     const res=await fetch(ENDPOINT_URL,{

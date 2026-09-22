@@ -1,15 +1,18 @@
 /**
- * おはツイキーホルダー 画像受付フォーム — 受け取り用 Google Apps Script
- * ============================================================================
- * index.html から送られてくる「表面(imageFront) / 裏面(imageBack)」の2枚を
- * Google Drive のフォルダに保存し、スプレッドシートに1行ずつ記録します。
+ * おはツイ 画像受付フォーム — 受け取り用 Google Apps Script
+ *
+ * index.html から送られてくる画像を Google Drive のフォルダに保存し、
+ * スプレッドシートに1行ずつ記録します。
+ *
+ * 対応商品:
+ *   - キーホルダー … 表面(imageFront) / 裏面(imageBack) の2枚必須
+ *   - 缶バッジ   … 表面(imageFront) のみ（円形 PNG）。裏面は不要
  *
  * clasp でのデプロイ手順は gas/README.md を参照。
  * FOLDER_ID を空のままにしておくと、マイドライブに FOLDER_NAME のフォルダを
  * 自動作成してそこへ保存するので、設定なしでもそのまま動きます。
  * SHEET_ID も空のままでよく、初回実行時に記録用スプレッドシートを自動作成して
  * Script Properties（LOG_SHEET_ID）に覚えておき、以降はそこへ追記し続けます。
- * ============================================================================
  */
 
 // ▼▼▼ 設定（未設定でも動作します） ▼▼▼
@@ -32,10 +35,15 @@ function doPost(e) {
     const safe = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 50);
     const base  = (safe(data.orderId) || 'noorder') + '_' + (safe(data.name) || 'noname');
     const stamp = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd_HHmmss');
-    // 印刷モード（フチあり/フチなし）。出品者がSELPHYでの印刷方法を判断するために記録
-    const mode  = (data.borderMode === 'フチあり' || data.borderMode === 'フチなし') ? data.borderMode : '未指定';
+    // 商品タイプ（未指定時は互換のためキーホルダー扱い）
+    const productType = (data.productType === '缶バッジ') ? '缶バッジ' : 'キーホルダー';
+    const isBadge = productType === '缶バッジ';
+    // 印刷モード（フチあり/フチなし）。缶バッジはフチ設定なし
+    const mode = isBadge
+      ? '缶バッジ'
+      : ((data.borderMode === 'フチあり' || data.borderMode === 'フチなし') ? data.borderMode : '未指定');
 
-    // 表面・裏面の2枚を保存
+    // 表面・裏面を保存（裏面はキーホルダーのみ必須）
     const savedUrls = {};
     [['Front', '表'], ['Back', '裏']].forEach(function (pair) {
       const key   = pair[0];               // 'Front' | 'Back'
@@ -55,8 +63,11 @@ function doPost(e) {
       savedUrls[key] = file.getUrl();
     });
 
-    // 表・裏の両方がそろっていなければエラー扱い
-    if (!savedUrls.Front || !savedUrls.Back) {
+    // 表は必須。裏はキーホルダーのみ必須（缶バッジは片面）
+    if (!savedUrls.Front) {
+      return jsonOut({ status: 'error', message: '表面の画像がありません' });
+    }
+    if (!isBadge && !savedUrls.Back) {
       return jsonOut({ status: 'error', message: '表面・裏面の画像がそろっていません' });
     }
 
@@ -69,16 +80,17 @@ function doPost(e) {
         data.orderId || '',
         data.email || '',
         data.note || '',
-        savedUrls.Front,
-        savedUrls.Back,
+        savedUrls.Front || '',
+        savedUrls.Back || '',
         mode,
-        data.nfcUrl || ''
+        data.nfcUrl || '',
+        productType
       ]);
     } catch (logErr) {
       Logger.log('スプレッドシート記録に失敗しました: ' + logErr);
     }
 
-    return jsonOut({ status: 'ok', files: savedUrls });
+    return jsonOut({ status: 'ok', files: savedUrls, productType: productType });
   } catch (err) {
     return jsonOut({ status: 'error', message: String(err) });
   }
@@ -100,7 +112,7 @@ function getUploadFolder_() {
  * 3. どちらも無ければ新規作成し、ヘッダ行を書き込んで ID を保存する
  */
 function getLogSheet_() {
-  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定', 'NFC URL'];
+  const HEADER = ['日時', 'お名前', '注文番号', 'メール', '備考', '表URL', '裏URL', 'フチ設定', 'NFC URL', '商品タイプ'];
   let sheet;
 
   if (SHEET_ID) {
@@ -119,17 +131,15 @@ function getLogSheet_() {
     }
   }
 
-  // 既存シートの見出しに『フチ設定』『NFC URL』列が無ければ補う（旧バージョンからの引き継ぎ用）。
-  // 末尾列だけを見るとどの列名が欠けているか判定できないため、見出し行全体を読んで確認する。
+  // 既存シートの見出しに不足列があれば末尾へ補う（旧バージョンからの引き継ぎ用）
   if (sheet.getLastRow() >= 1) {
     const existing = sheet.getRange(1, 1, 1, sheet.getLastColumn() || 1).getValues()[0];
-    if (existing.indexOf('フチ設定') === -1) {
-      sheet.getRange(1, existing.length + 1).setValue('フチ設定');
-      existing.push('フチ設定');
-    }
-    if (existing.indexOf('NFC URL') === -1) {
-      sheet.getRange(1, existing.length + 1).setValue('NFC URL');
-    }
+    ['フチ設定', 'NFC URL', '商品タイプ'].forEach(function (colName) {
+      if (existing.indexOf(colName) === -1) {
+        sheet.getRange(1, existing.length + 1).setValue(colName);
+        existing.push(colName);
+      }
+    });
   }
   return sheet;
 }
